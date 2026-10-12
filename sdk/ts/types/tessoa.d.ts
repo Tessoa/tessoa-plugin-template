@@ -139,3 +139,27 @@ declare var console: {
   warn(...args: unknown[]): void;
   error(...args: unknown[]): void;
 };
+
+/**
+ * Decodes UTF-8 bytes into a string, as in browsers and Node.js. Only UTF-8
+ * is supported: any other label throws a RangeError. Invalid bytes become
+ * U+FFFD unless `fatal` is set, which makes `decode` throw a TypeError. A
+ * leading byte order mark is dropped unless `ignoreBOM` is set. Pass
+ * `{ stream: true }` while feeding chunks, so that a character split between
+ * two chunks is decoded whole.
+ */
+declare class TextDecoder {
+  constructor(label?: "utf-8" | "utf8", options?: { fatal?: boolean; ignoreBOM?: boolean });
+  readonly encoding: "utf-8";
+  readonly fatal: boolean;
+  readonly ignoreBOM: boolean;
+  decode(input?: ArrayBuffer | ArrayBufferView, options?: { stream?: boolean }): string;
+}
+
+/** Encodes a string as UTF-8 bytes, as in browsers and Node.js. */
+declare class TextEncoder {
+  readonly encoding: "utf-8";
+  encode(input?: string): Uint8Array;
+  /** Writes as much of `source` as fits; `read` counts UTF-16 code units. */
+  encodeInto(source: string, destination: Uint8Array): { read: number; written: number };
+}

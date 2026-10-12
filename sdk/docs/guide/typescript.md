@@ -53,6 +53,24 @@ it; in short:
 out of `run`, or a rejected promise, ends the command with its message in the
 log.
 
+## Text
+
+File contents arrive as bytes. `TextDecoder` and `TextEncoder` are the
+standard ones, for UTF-8 only:
+
+```ts
+const text = new TextDecoder().decode(tessoa.files.readAll(file.handle));
+const bytes = new TextEncoder().encode(text);
+```
+
+Invalid bytes become U+FFFD, or throw with `{ fatal: true }`; a leading byte
+order mark is dropped. When reading a file in chunks with `read`, decode each
+chunk with `{ stream: true }` so that a character split between two chunks
+comes out whole. Any encoding other than UTF-8 throws a `RangeError`; decode
+UTF-16 or legacy code pages yourself if a plugin needs them. Do not add `DOM`
+to `lib` in `tsconfig.json` for these: the SDK declares them, and the DOM
+declarations would clash.
+
 ## What is different from Node.js
 
 There is no `require`, no `import` of Node modules, no `fs`, no `fetch`, no

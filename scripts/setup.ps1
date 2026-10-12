@@ -21,6 +21,10 @@ too, unless they are already set to something else.
 -NoModifyPath leaves the user's PATH alone; the tools are then reachable by the
 paths printed at the end.
 
+A terminal that was open before the script ran does not see a change to the
+user's PATH. When the tools are not on its PATH, the script ends with a line
+that adds them to it, for PowerShell and for bash.
+
 TESSOA_PLUGIN_HOME changes where tessoa-plugin and Node.js go (default
 ~\.tessoa-plugin); tessoa-plugin looks there too. TESSOA_PLUGIN_DOWNLOAD
 changes where tessoa-plugin is downloaded from; its sha256 still has to match.
@@ -39,6 +43,7 @@ $ProgressPreference = 'SilentlyContinue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
+$StartPath = $env:Path
 $Target = 'x86_64-pc-windows-msvc'
 $DefaultDownload = 'https://download.tessoa.com/plugins/'
 $NodeMajor = 22
@@ -164,6 +169,23 @@ $Summary = New-Object System.Collections.ArrayList
 $PathDirs = New-Object System.Collections.ArrayList
 function Report([string] $Tool, [string] $Version, [string] $Path) {
     [void]$Summary.Add(('{0,-14} {1,-10} {2}' -f $Tool, $Version, $Path))
+}
+
+# Folders of the tools the project uses that the calling terminal does not find
+# by name. npm in particular starts node by name, so calling npm by its full
+# path is not enough.
+$HereDirs = New-Object System.Collections.ArrayList
+function Want-Here([string] $Dir) {
+    if (-not $Dir) { return }
+    $d = $Dir.TrimEnd('\')
+    $onPath = @($StartPath -split ';' | ForEach-Object { $_.Trim().TrimEnd('\') }) -contains $d
+    if (-not $onPath -and -not ($HereDirs -contains $d)) { [void]$HereDirs.Add($d) }
+}
+
+# C:\Users\me -> /c/Users/me, as Git Bash writes it.
+function Bash-Path([string] $Dir) {
+    if ($Dir -match '^([A-Za-z]):\\?(.*)$') { return '/' + $Matches[1].ToLowerInvariant() + '/' + $Matches[2].Replace('\', '/') }
+    return $Dir.Replace('\', '/')
 }
 
 try {
@@ -349,16 +371,30 @@ try {
         }
     }
 
+    if ($found) { Want-Here (Split-Path -Parent $found) } else { Want-Here $toolDir }
+    # Our Node.js only where there is no other: an older one stays the default.
+    if ($Lang -eq 'ts' -and -not $systemNode) { Want-Here (Split-Path -Parent $node) }
+    if ($Lang -eq 'rust') { Want-Here (Split-Path -Parent $cargo) }
+
     Write-Host ''
     foreach ($row in $Summary) { Write-Host $row }
     Write-Host ''
     if ($NoModifyPath -and $PathDirs.Count -gt 0) {
-        Write-Host 'PATH was left alone (-NoModifyPath). Call the tools by the paths above.'
+        Write-Host 'PATH was left alone (-NoModifyPath).'
     } elseif ($changed) {
-        Write-Host 'New terminals find these by name. A terminal opened before this setup may not;'
-        Write-Host 'call the tools by the paths above until it is reopened.'
+        Write-Host 'New terminals find these tools by name.'
     }
     Write-Host 'Next: tessoa-plugin init (see sdk/AGENTS.md).'
+    if ($HereDirs.Count -gt 0) {
+        $ps = @($HereDirs | ForEach-Object { $_.Replace("'", "''") }) -join ';'
+        $sh = @($HereDirs | ForEach-Object { Bash-Path $_ }) -join ':'
+        Write-Host ''
+        Write-Host 'This terminal does not find these tools by name yet. Run this line in it first'
+        Write-Host '(where every command starts a new shell, start each command with it):'
+        Write-Host "  `$env:Path = '$ps;' + `$env:Path"
+        Write-Host 'The same in bash (Git Bash):'
+        Write-Host "  export PATH=`"${sh}:`$PATH`""
+    }
     exit 0
 } catch {
     Write-Host "setup: $($_.Exception.Message)"

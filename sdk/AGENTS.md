@@ -23,9 +23,13 @@ the user, who confirms it in tessoa.
    `powershell -ExecutionPolicy Bypass -File scripts/setup.ps1 -Lang ts` (or
    `-Lang rust`); elsewhere: `bash scripts/setup.sh --lang ts` (or `--lang rust`).
    It installs only what is missing, `tessoa-plugin` included, and prints the
-   full path of every tool. A terminal that was open before the setup may not
-   find a tool it just installed; call such a tool by the printed path.
-   `tessoa-plugin` itself finds the Node.js and Rust the script installed.
+   full path of every tool. A terminal that was open before the setup does not
+   find what it just installed: when that is the case, the script ends with a
+   line that adds the tools to the terminal's PATH. Run that line first. If
+   every command you run starts a new shell, start each command that calls
+   `node`, `npm`, `cargo` or `tessoa-plugin` with it. `tessoa-plugin` itself
+   finds the Node.js and Rust the script installed, so calling it by its full
+   path also works.
 3. If `skeleton/` still exists, run
    `tessoa-plugin init --lang ts|rust --id <reverse.domain.id> --name "<Name>"`.
    It keeps the skeleton you chose and deletes the other one.

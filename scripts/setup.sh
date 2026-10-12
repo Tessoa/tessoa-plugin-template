@@ -18,12 +18,18 @@
 # --no-modify-path leaves the shell start-up files alone; the tools are then
 # reachable by the paths printed at the end.
 #
+# A shell that was open before the script ran does not read the start-up files
+# again. When the tools are not on its PATH, the script ends with a line that
+# adds them to it.
+#
 # TESSOA_PLUGIN_HOME changes where tessoa-plugin and Node.js go (default
 # ~/.tessoa-plugin); tessoa-plugin looks there too. TESSOA_PLUGIN_DOWNLOAD
 # changes where tessoa-plugin is downloaded from; its sha256 still has to
 # match.
 set -euo pipefail
 
+# The caller's PATH, before this script adds to its own.
+start_path="$PATH"
 lang=""
 mirror="auto"
 modify_path=1
@@ -139,6 +145,17 @@ mirrored() {
 summary=""
 report() { summary="$summary$(printf '%-14s %-10s %s' "$1" "$2" "$3")"$'\n'; }
 path_dirs=()
+
+# Folders of the tools the project uses that the calling shell does not find by
+# name. npm in particular starts node by name, so calling npm by its full path
+# is not enough.
+here_dirs=()
+want_here() {
+    local d
+    case ":$start_path:" in *":$1:"*) return 0 ;; esac
+    for d in ${here_dirs[@]+"${here_dirs[@]}"}; do [ "$d" = "$1" ] && return 0; done
+    here_dirs+=("$1")
+}
 
 # ---------------------------------------------------------------- tessoa-plugin
 
@@ -326,13 +343,24 @@ if [ "$modify_path" = 1 ] && [ "${#path_dirs[@]}" -gt 0 ]; then
     done
 fi
 
+want_here "$(dirname "${found:-$tool_exe}")"
+# Our Node.js only where there is no other: an older one stays the default.
+if [ "$lang" = ts ] && [ -z "$system_node" ]; then want_here "$(dirname "$node")"; fi
+if [ "$lang" = rust ]; then want_here "$(dirname "$cargo")"; fi
+
 echo
 printf '%s' "$summary"
 echo
 if [ "$modify_path" = 0 ] && [ "${#path_dirs[@]}" -gt 0 ]; then
-    echo "PATH was left alone (--no-modify-path). Call the tools by the paths above."
+    echo "PATH was left alone (--no-modify-path)."
 elif [ "$changed" = 1 ]; then
-    echo "New terminals find these by name. A terminal opened before this setup may not;"
-    echo "call the tools by the paths above until it is reopened."
+    echo "New shells find these tools by name."
 fi
 echo "Next: tessoa-plugin init (see sdk/AGENTS.md)."
+if [ "${#here_dirs[@]}" -gt 0 ]; then
+    joined="$(IFS=:; echo "${here_dirs[*]}")"
+    echo
+    echo "This shell does not find these tools by name yet. Run this line in it first"
+    echo "(where every command starts a new shell, start each command with it):"
+    echo "  export PATH=\"$joined:\$PATH\""
+fi
