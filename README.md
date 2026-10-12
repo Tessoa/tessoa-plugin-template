@@ -68,3 +68,32 @@ updates `tessoa-plugin` itself when a newer release exists, then replaces
 `sdk/` with the newest kit. Both come from download.tessoa.com; their signature
 and checksums are verified before anything changes. Code outside
 `sdk/` is not touched. Run the tests again afterwards.
+
+## Licence
+
+The skeletons, the examples and the setup scripts in this template are yours
+to use. They are released under the MIT No Attribution licence below: a plugin
+made from them can be used, changed, published and sold without asking anyone
+and without keeping any notice.
+
+The files under `sdk/` are the tessoa plugin SDK. They are not covered by that
+licence and come under the SDK's own terms.
+
+```
+MIT No Attribution
+
+Copyright 2026 Chengdu Tianji Engineering Management Service Co., Ltd.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```

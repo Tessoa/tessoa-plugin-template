@@ -54,3 +54,29 @@ tessoa-plugin upgrade            # 加 --check 只查看不升级
 
 有新版时先把 `tessoa-plugin` 自己换新，再把 `sdk/` 换成最新的套件。两者都从 download.tessoa.com 下载，换之前先核对签名和校验和；
 `sdk/` 以外的代码不会被改动。升级后再跑一遍测试。
+
+## 许可
+
+模板里的骨架、例子和装环境脚本归你随便用。它们按下面的 MIT No Attribution 许可发布：用它们做出来的插件，
+使用、修改、发布、出售都不用问任何人，也不用保留任何声明。
+
+`sdk/` 下的文件是 tessoa 插件 SDK，不在这份许可之内，按 SDK 自己的条款。
+
+```
+MIT No Attribution
+
+Copyright 2026 Chengdu Tianji Engineering Management Service Co., Ltd.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
