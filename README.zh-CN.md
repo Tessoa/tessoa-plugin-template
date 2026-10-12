@@ -1,0 +1,55 @@
+# tessoa 插件模板
+
+[English](README.md)
+
+用 TypeScript 或 Rust 写 tessoa 插件的起点。插件往 tessoa 的右键菜单里加命令，运行在沙箱里：
+它能看到用户选中的文件，但看不到路径，对文件的任何改动都只能请 tessoa 去做。
+
+模板的布局让编程助手只凭一句话的需求就能做完整件事：`AGENTS.md` 把它引到 `sdk/` 里的说明书，
+例子是完整可用的插件，三条命令负责测试、打包和装进 tessoa。
+
+## 开始
+
+1. 用这个模板建仓（GitHub 上的「Use this template」），克隆到本机。
+2. 用你的编程助手打开它，说出想要的插件，比如「右键选中照片，按拍摄日期重命名」。
+
+也可以自己动手：
+
+```
+scripts/setup.ps1 -Lang ts        # Windows；其他系统：scripts/setup.sh --lang ts
+tessoa-plugin init --lang ts --id com.example.my-plugin
+tessoa-plugin test
+tessoa-plugin package
+tessoa-plugin install
+```
+
+装环境脚本只装缺的：TypeScript 要 Node.js，Rust 要 Rust，两者都要命令行工具 `tessoa-plugin`。
+`init` 把所选语言的骨架挪到仓根、填好 id，并删掉另一种。`test` 在真正的沙箱里、对着模拟的 tessoa
+运行插件，所以直到 `install` 之前都不需要 tessoa；`install` 把插件交给本机正在运行的 tessoa，
+插件要的权限由你在 tessoa 窗口里确认。
+
+## 目录
+
+| 路径 | 是什么 |
+|---|---|
+| `AGENTS.md` | 编程助手的起点，指向 `sdk/AGENTS.md`。 |
+| `skeleton/` | TypeScript 与 Rust 两套起点，`init` 之后就没了。 |
+| `examples/` | 完整的插件，各自带测试。 |
+| `sdk/` | SDK 套件：说明书、接口定义、接口参考、TypeScript 声明和 Rust SDK。不要改。 |
+| `scripts/` | 装环境脚本。 |
+
+仓根还有几个一行的文件，用的是某些工具会找的文件名，内容都是让它们去读 `AGENTS.md`。
+
+## 需要什么
+
+- Windows、macOS 或 Linux。
+- 支持插件的 tessoa，用来装上并试用插件。装进 tessoa 需要授权；建仓、测试、打包都不需要。
+
+## 升级 SDK
+
+```
+tessoa-plugin upgrade            # 加 --check 只查看不升级
+```
+
+把 `sdk/` 换成最新的套件。套件从 download.tessoa.com 下载，换之前先核对签名和校验和；
+`sdk/` 以外的代码不会被改动。升级后再跑一遍测试。

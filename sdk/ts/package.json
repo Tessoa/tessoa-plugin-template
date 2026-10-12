@@ -1,0 +1,12 @@
+{
+  "name": "@tessoa/plugin-sdk",
+  "version": "0.1.0",
+  "description": "Type declarations for writing tessoa plugins in TypeScript",
+  "private": true,
+  "types": "types/tessoa.d.ts",
+  "files": [
+    "types",
+    "README.md"
+  ],
+  "license": "SEE LICENSE IN README.md"
+}

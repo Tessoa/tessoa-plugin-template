@@ -1,0 +1,139 @@
+// Plugin interface for tessoa.
+//
+// Version 0.1 covers what a context-menu command needs in order to rename the
+// files the user selected. Further capabilities (columns, settings, network,
+// clipboard) arrive as separate interfaces in later versions.
+//
+// Rules that every interface here follows:
+//
+// - Plugins never see paths. The host hands out numeric handles for the files
+//   the user selected for this command; the handles expire when the command
+//   returns.
+// - Anything that changes the file system is a request to the host. The host
+//   applies its own conflict handling, recycle bin, undo and activity log.
+// - Dialogs block: `confirm` returns after the user pressed a button. The
+//   runner suspends the plugin while it waits, so the host stays responsive.
+// - Once the interface is frozen for the public beta this file only grows: new
+//   functions, new variant cases, new interfaces. Existing signatures do not
+//   change, and a synchronous function never becomes asynchronous.
+
+package tessoa:plugin@0.1.0;
+
+/// Plugin log. Lines go to the plugin log panel and the plugin log file.
+/// Available without declaring a permission.
+interface log {
+    enum level {
+        debug,
+        info,
+        warn,
+        error,
+    }
+
+    /// Write one line to the plugin log.
+    log: func(level: level, message: string);
+}
+
+/// Notifications and dialogs. The host draws them with its own widgets, so they
+/// follow the theme, the UI scale and the language.
+/// Available without declaring a permission.
+interface ui {
+    /// Show a notification and return immediately.
+    notify: func(title: string, body: string);
+
+    /// Ask a yes/no question and wait for the answer.
+    /// Returns true when the user pressed the `ok-label` button.
+    confirm: func(title: string, body: string, ok-label: string, cancel-label: string) -> bool;
+
+    /// Like `confirm`, with one line per item shown between the body and the
+    /// buttons. Use it to preview a batch change before applying it.
+    confirm-list: func(title: string, body: string, items: list<string>, ok-label: string, cancel-label: string) -> bool;
+}
+
+/// The files the user handed to the current command.
+interface files {
+    /// Identifies one selected file for the duration of the current command.
+    /// Handles are issued by the host when the command starts and are invalid
+    /// after it returns.
+    type handle = u32;
+
+    record file-info {
+        handle: handle,
+        /// File name without the directory. Plugins never see the directory.
+        name: string,
+        /// Size in bytes.
+        size: u64,
+        /// Last modification time as Unix epoch milliseconds.
+        modified-ms: s64,
+        is-dir: bool,
+    }
+
+    variant error {
+        /// The handle was not issued for this command.
+        not-granted(string),
+        /// The manifest does not declare the permission this call needs.
+        permission-denied(string),
+        /// The file system reported an error.
+        io(string),
+    }
+
+    /// The files that were selected when the command was triggered.
+    selected: func() -> list<file-info>;
+
+    /// Read up to `max-len` bytes starting at `offset`.
+    /// Requires the `files.read-selected` permission.
+    read: func(handle: handle, offset: u64, max-len: u32) -> result<list<u8>, error>;
+
+    record rename-request {
+        handle: handle,
+        /// New file name without the directory. Names that contain a path
+        /// separator or `..` are rejected.
+        new-name: string,
+    }
+
+    variant rename-outcome {
+        /// Renamed. Carries the final name; the host may have changed it to
+        /// resolve a conflict.
+        renamed(string),
+        /// Nothing to do, for example because the name did not change.
+        /// Carries the reason.
+        skipped(string),
+        /// Failed. Carries the reason.
+        failed(string),
+    }
+
+    /// Ask the host to rename files. One outcome per request, in order; one
+    /// failure does not stop the others.
+    /// Requires the `files.rename-selected` permission.
+    rename: func(items: list<rename-request>) -> result<list<rename-outcome>, error>;
+}
+
+/// What every plugin exports.
+interface plugin {
+    /// Run one of the commands declared in the manifest. The error text goes
+    /// to the plugin log and is shown to the user.
+    run-command: func(command-id: string) -> result<_, string>;
+}
+
+/// World for plugins compiled to a component directly, for example from Rust.
+world tessoa-plugin {
+    import log;
+    import ui;
+    import files;
+    export plugin;
+}
+
+/// Used by the JavaScript engine component only. Plugin authors never see it.
+interface script-source {
+    /// The plugin's bundled JavaScript source, read by the host from the file
+    /// named in the manifest.
+    get-script: func() -> string;
+}
+
+/// World for the JavaScript engine component.
+world tessoa-js-engine {
+    import log;
+    import ui;
+    import files;
+    import script-source;
+    export plugin;
+}

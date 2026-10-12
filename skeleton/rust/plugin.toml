@@ -1,0 +1,20 @@
+[plugin]
+id = "__PLUGIN_ID__"
+name = "__PLUGIN_NAME__"
+version = "0.1.0"
+api = "tessoa:plugin@0.1.0"
+
+[entry]
+kind = "wasm"
+file = "dist/plugin.wasm"
+
+[[commands]]
+id = "count-selected"
+title = "Count selected files"
+where = ["context-menu"]
+when = { min-selected = 1 }
+
+# Names and sizes of the selected files need no permission. Read
+# sdk/docs/guide/permissions.md before adding one.
+[permissions]
+files = []

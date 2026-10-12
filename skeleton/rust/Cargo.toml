@@ -1,0 +1,23 @@
+[package]
+name = "__PLUGIN_CRATE__"
+version = "0.1.0"
+edition = "2024"
+publish = false
+# examples/ holds complete plugins with a Cargo.toml each, not examples of this
+# crate.
+autoexamples = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+tessoa-plugin-sdk = { path = "sdk/rust" }
+
+# tessoa-plugin builds with --release. A panic aborts, which the sandbox
+# reports as a crash of the command.
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
