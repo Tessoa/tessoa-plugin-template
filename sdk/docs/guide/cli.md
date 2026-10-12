@@ -6,7 +6,7 @@ Run it inside the project, or point it there with `--dir`.
 | Command | What it does | Exit status |
 |---|---|---|
 | `init` | Run once in a project made from the template. `--lang ts` or `--lang rust` and `--id <reverse.domain.id>` (and optionally `--name`) move the chosen skeleton from `skeleton/` to the project root with the id and name filled in, and delete the other skeleton. The template's own `README*.md` files at the root are replaced by the skeleton's README, which describes the plugin and goes into its package. Refuses a project that already has a `plugin.toml`, and a name with quotes or backslashes. | 1 on failure |
-| `upgrade` | Replaces `sdk/` with the newest SDK kit: the TypeScript declarations, the Rust SDK, the interface definition, the generated API reference, the guides and the manual `sdk/AGENTS.md`. The kit comes from a manifest published under `download.tessoa.com`; its signature and the archive's sha256 are checked before anything on disk changes, and the old `sdk/` stays if anything fails. `--check` only reports; `--version` picks a kit. Everything outside `sdk/` is left alone. No account is needed. | 1 on failure |
+| `upgrade` | Updates the tool itself when a newer release for this platform exists, then replaces `sdk/` with the newest SDK kit: the TypeScript declarations, the Rust SDK, the interface definition, the generated API reference, the guides and the manual `sdk/AGENTS.md`. Both come from a manifest published under `download.tessoa.com`; its signature and each archive's sha256 are checked before anything on disk changes, the old `sdk/` stays if anything fails, and a kit that needs a newer tool than the one running is refused. On Windows the replaced executable is kept as `tessoa-plugin.exe.old` until the next run. `--check` only reports; `--version` picks a kit. Everything outside `sdk/` is left alone. No account is needed. | 1 on failure, also when only the tool could not be updated |
 | `doctor` | Checks that the toolchain the project needs is installed: cargo, rustc and the `wasm32-wasip2` target for a Rust project; Node.js and npm for a TypeScript project. Reports whether the manifest parses and whether the plugin is built. | 1 when something required is missing |
 | `check` | Prints the manifest summary and the import audit of the built component. | 1 when the audit finds a violation |
 | `build` | Builds with the project's own toolchain (`cargo build --release --target wasm32-wasip2`, or `npm run build` after an `npm install` when `node_modules` is missing), copies the result to the entry path named in the manifest, then audits it. | 1 when the build fails or the audit finds a violation |
@@ -25,3 +25,8 @@ declares; the user grants anything beyond that inside tessoa.
   committed.
 - Compiled components are cached in the system's temporary directory under
   `tessoa-plugin/cache`. Deleting it costs one recompilation.
+- The template's setup scripts install the tool, and Node.js when the system
+  has none recent enough, under `~/.tessoa-plugin` (or `TESSOA_PLUGIN_HOME`),
+  and Rust with rustup under `~/.cargo` (or `CARGO_HOME`). The tool adds those
+  folders to the PATH of the programs it starts, so it finds what the scripts
+  installed even in a terminal that was opened before them.

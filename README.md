@@ -23,7 +23,8 @@ the result.
 To take the steps yourself instead:
 
 ```
-scripts/setup.ps1 -Lang ts        # Windows; elsewhere: scripts/setup.sh --lang ts
+powershell -ExecutionPolicy Bypass -File scripts/setup.ps1 -Lang ts   # Windows
+bash scripts/setup.sh --lang ts                                    # macOS, Linux
 tessoa-plugin init --lang ts --id com.example.my-plugin
 tessoa-plugin test
 tessoa-plugin package
@@ -63,6 +64,7 @@ those tools to `AGENTS.md`.
 tessoa-plugin upgrade            # or --check to only look
 ```
 
-replaces `sdk/` with the newest kit. The kit comes from download.tessoa.com;
-its signature and checksum are verified before anything changes. Code outside
+updates `tessoa-plugin` itself when a newer release exists, then replaces
+`sdk/` with the newest kit. Both come from download.tessoa.com; their signature
+and checksums are verified before anything changes. Code outside
 `sdk/` is not touched. Run the tests again afterwards.

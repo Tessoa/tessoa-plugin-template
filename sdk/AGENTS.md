@@ -19,11 +19,13 @@ the user, who confirms it in tessoa.
 
 1. Pick the language. TypeScript is enough for most plugins that rename, filter or
    label files. Pick Rust when the task is heavy computation or needs a crate.
-2. Run the setup script for that language: `scripts/setup.ps1 -Lang ts` (or `rust`)
-   on Windows, `scripts/setup.sh --lang ts` (or `rust`) elsewhere. It installs only
-   what is missing, `tessoa-plugin` included, and prints the full path of every
-   tool. A terminal that was open before the setup may not find a tool it just
-   installed; call such a tool by the printed path.
+2. Run the setup script for that language. On Windows:
+   `powershell -ExecutionPolicy Bypass -File scripts/setup.ps1 -Lang ts` (or
+   `-Lang rust`); elsewhere: `bash scripts/setup.sh --lang ts` (or `--lang rust`).
+   It installs only what is missing, `tessoa-plugin` included, and prints the
+   full path of every tool. A terminal that was open before the setup may not
+   find a tool it just installed; call such a tool by the printed path.
+   `tessoa-plugin` itself finds the Node.js and Rust the script installed.
 3. If `skeleton/` still exists, run
    `tessoa-plugin init --lang ts|rust --id <reverse.domain.id> --name "<Name>"`.
    It keeps the skeleton you chose and deletes the other one.

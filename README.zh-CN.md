@@ -16,7 +16,8 @@
 也可以自己动手：
 
 ```
-scripts/setup.ps1 -Lang ts        # Windows；其他系统：scripts/setup.sh --lang ts
+powershell -ExecutionPolicy Bypass -File scripts/setup.ps1 -Lang ts   # Windows
+bash scripts/setup.sh --lang ts                                    # macOS、Linux
 tessoa-plugin init --lang ts --id com.example.my-plugin
 tessoa-plugin test
 tessoa-plugin package
@@ -51,5 +52,5 @@ tessoa-plugin install
 tessoa-plugin upgrade            # 加 --check 只查看不升级
 ```
 
-把 `sdk/` 换成最新的套件。套件从 download.tessoa.com 下载，换之前先核对签名和校验和；
+有新版时先把 `tessoa-plugin` 自己换新，再把 `sdk/` 换成最新的套件。两者都从 download.tessoa.com 下载，换之前先核对签名和校验和；
 `sdk/` 以外的代码不会被改动。升级后再跑一遍测试。

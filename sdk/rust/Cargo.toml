@@ -3,7 +3,7 @@ name = "tessoa-plugin-sdk"
 description = "Write tessoa plugins in Rust"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.99"
+rust-version = "1.88"
 publish = false
 license = "LicenseRef-Proprietary"
 
