@@ -17,12 +17,15 @@ my-plugin/
   tests/fixtures/
 ```
 
-The build bundles `src/plugin.ts` into one file whose exports land on a global
-named `plugin`:
+The build checks the types, then bundles `src/plugin.ts` into one file whose
+exports land on a global named `plugin`:
 
 ```
-esbuild src/plugin.ts --bundle --format=iife --global-name=plugin --target=es2020 --outfile=dist/plugin.js
+tsc --noEmit && esbuild src/plugin.ts --bundle --format=iife --global-name=plugin --target=es2020 --outfile=dist/plugin.js
 ```
+
+The bundler alone does not check types, so without the first half a call to a
+function that does not exist would only fail when the plugin runs.
 
 The engine calls `plugin.run(commandId)` for every command and waits for the
 returned promise. A plain JavaScript file can do the same by assigning

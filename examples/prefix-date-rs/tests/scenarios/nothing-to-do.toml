@@ -1,0 +1,10 @@
+name = "Leaves names that already start with a date"
+command = "prefix-date"
+
+[[files]]
+from = "text/empty.txt"
+as = "2020-01-01 old.txt"
+
+[expect]
+files = ["2020-01-01 old.txt"]
+notifications = [{ title = "Prefix with modification date", body = "Nothing to rename." }]

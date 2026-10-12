@@ -1,0 +1,18 @@
+[plugin]
+id = "com.example.rename-by-date"
+name = "Rename by capture date"
+version = "0.1.0"
+api = "tessoa:plugin@0.1.0"
+
+[entry]
+kind = "wasm"
+file = "dist/plugin.wasm"
+
+[[commands]]
+id = "rename-by-date"
+title = "Rename by capture date"
+where = ["context-menu"]
+when = { ext = ["jpg", "jpeg", "heic", "png"], min-selected = 1 }
+
+[permissions]
+files = ["read-selected", "rename-selected"]

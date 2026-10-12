@@ -1,0 +1,6 @@
+name = "Says so when nothing is selected"
+command = "count-lines"
+
+[expect]
+files = []
+notifications = [{ title = "Count lines", body = "No files selected." }]

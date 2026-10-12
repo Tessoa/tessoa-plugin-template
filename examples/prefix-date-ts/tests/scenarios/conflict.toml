@@ -1,0 +1,22 @@
+name = "Reports a name that is already taken"
+command = "prefix-date"
+
+[[files]]
+from = "text/three-lines.txt"
+as = "notes.txt"
+modified = "2025-01-15T08:05:00Z"
+
+[[files]]
+from = "text/empty.txt"
+as = "2025-01-15 notes.txt"
+selected = false
+
+[[dialogs]]
+kind = "confirm-list"
+items = ["notes.txt  ->  2025-01-15 notes.txt"]
+answer = "ok"
+
+[expect]
+files = ["2025-01-15 notes.txt", "notes.txt"]
+notifications = [{ title = "Prefix with modification date", body = "Renamed 0 of 1 files." }]
+log-contains = ["failed notes.txt: a file named 2025-01-15 notes.txt already exists"]

@@ -1,0 +1,18 @@
+[plugin]
+id = "com.example.prefix-date-ts"
+name = "Prefix with modification date"
+version = "0.1.0"
+api = "tessoa:plugin@0.1.0"
+
+[entry]
+kind = "js"
+file = "dist/plugin.js"
+
+[[commands]]
+id = "prefix-date"
+title = "Prefix with modification date"
+where = ["context-menu"]
+when = { min-selected = 1 }
+
+[permissions]
+files = ["rename-selected"]

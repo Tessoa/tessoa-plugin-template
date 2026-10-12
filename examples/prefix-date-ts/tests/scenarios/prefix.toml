@@ -1,0 +1,32 @@
+name = "Puts the modification date in front of the names"
+command = "prefix-date"
+
+[[files]]
+from = "text/three-lines.txt"
+as = "notes.txt"
+modified = "2025-01-15T08:05:00Z"
+
+[[files]]
+from = "text/empty.txt"
+as = "report.txt"
+modified = "2024-12-31T23:59:00Z"
+
+[[files]]
+from = "text/empty.txt"
+as = "2020-01-01 old.txt"
+modified = "2020-01-01T12:00:00Z"
+
+[[dialogs]]
+kind = "confirm-list"
+title = "Prefix with modification date"
+body-contains = "2 files"
+items = [
+  "notes.txt  ->  2025-01-15 notes.txt",
+  "report.txt  ->  2024-12-31 report.txt",
+]
+answer = "ok"
+
+[expect]
+files = ["2020-01-01 old.txt", "2024-12-31 report.txt", "2025-01-15 notes.txt"]
+notifications = [{ title = "Prefix with modification date", body = "Renamed 2 of 2 files." }]
+log-contains = ["skipping 2020-01-01 old.txt: the name already starts with a date", "notes.txt -> 2025-01-15 notes.txt"]

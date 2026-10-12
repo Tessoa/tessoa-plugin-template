@@ -1,0 +1,14 @@
+{
+  "name": "count-lines",
+  "version": "0.1.0",
+  "description": "Example plugin: count the lines of the selected text files",
+  "private": true,
+  "scripts": {
+    "build": "tsc --noEmit && esbuild src/plugin.ts --bundle --format=iife --global-name=plugin --target=es2020 --outfile=dist/plugin.js"
+  },
+  "devDependencies": {
+    "@tessoa/plugin-sdk": "file:../../sdk/ts",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.6.0"
+  }
+}

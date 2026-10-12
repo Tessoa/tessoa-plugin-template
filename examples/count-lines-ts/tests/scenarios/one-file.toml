@@ -1,0 +1,10 @@
+name = "Uses the singular for one file"
+command = "count-lines"
+
+[[files]]
+from = "text/no-final-newline.txt"
+as = "short.txt"
+
+[expect]
+files = ["short.txt"]
+notifications = [{ title = "Count lines", body = "2 lines in 1 file." }]

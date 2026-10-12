@@ -1,0 +1,17 @@
+name = "Changes nothing when the user cancels"
+command = "prefix-date"
+
+[[files]]
+from = "text/three-lines.txt"
+as = "notes.txt"
+modified = "2025-01-15T08:05:00Z"
+
+[[dialogs]]
+kind = "confirm-list"
+items-count = 1
+answer = "cancel"
+
+[expect]
+files = ["notes.txt"]
+notifications = []
+log-contains = ["cancelled by the user"]

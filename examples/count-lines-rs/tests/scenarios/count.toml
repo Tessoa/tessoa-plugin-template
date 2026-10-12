@@ -1,0 +1,22 @@
+name = "Counts the lines of every selected file"
+command = "count-lines"
+
+[[files]]
+from = "text/three-lines.txt"
+
+[[files]]
+from = "text/no-final-newline.txt"
+
+[[files]]
+from = "text/empty.txt"
+
+[[files]]
+from = "text/three-lines.txt"
+as = "not-selected.txt"
+selected = false
+
+[expect]
+files = ["empty.txt", "no-final-newline.txt", "not-selected.txt", "three-lines.txt"]
+notifications = [{ title = "Count lines", body = "5 lines in 3 files." }]
+log-contains = ["three-lines.txt: 3 lines", "no-final-newline.txt: 2 lines", "empty.txt: 0 lines"]
+log-not-contains = ["not-selected.txt"]
