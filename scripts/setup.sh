@@ -330,7 +330,11 @@ if [ "$modify_path" = 1 ] && [ "${#path_dirs[@]}" -gt 0 ]; then
         done
     } >"$env_file"
     line=". \"$env_file\""
-    for rc in "$HOME/.profile" "$HOME/.bashrc" "$HOME/.zshrc"; do
+    for rc in "$HOME/.profile" "$HOME/.bash_profile" "$HOME/.bash_login" "$HOME/.bashrc" "$HOME/.zshrc"; do
+        # A login bash reads only the first of .bash_profile, .bash_login and
+        # .profile that exists, and a new terminal on macOS starts a login
+        # shell: the first two get the line too, when they exist.
+        case "$rc" in */.bash_profile | */.bash_login) [ -f "$rc" ] || continue ;; esac
         # .zshrc only where zsh is the shell or the file exists already.
         if [ "$rc" = "$HOME/.zshrc" ] && [ ! -f "$rc" ] && [ "$(basename "${SHELL:-}")" != zsh ]; then
             continue
