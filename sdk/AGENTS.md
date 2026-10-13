@@ -97,7 +97,7 @@ given only by the user, inside tessoa.
 | Commands in detail | `sdk/docs/guide/cli.md` |
 | TypeScript specifics | `sdk/docs/guide/typescript.md` |
 | The interface definition | `sdk/wit/tessoa-plugin.wit` |
-| What may be done with the SDK and with the plugins built from it | `sdk/LICENSE.md` |
+| What may be done with the SDK, the command-line tool and the plugins built with them | `sdk/LICENSE.md` |
 | Complete working plugins | `examples/` |
 
 Copy from `examples/` rather than from memory: they build and pass their tests
