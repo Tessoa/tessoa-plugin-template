@@ -60,6 +60,11 @@ pub trait Plugin {
 }
 
 /// Export a [`Plugin`] implementation as the plugin's entry point.
+///
+/// The export is made in the WebAssembly build only. A build for the computer
+/// itself, which `cargo test` makes for unit tests, has no use for it, and on
+/// macOS it would not link: the exported names contain `#`, which the macOS
+/// linker reads as the start of a comment in its list of exports.
 #[macro_export]
 macro_rules! export {
     ($plugin:ty) => {
@@ -72,7 +77,13 @@ macro_rules! export {
                 }
             }
 
+            #[cfg(target_arch = "wasm32")]
     $crate::bindings::export_plugin!(TessoaExportedPlugin with_types_in $crate::bindings);
+
+            // Without the export nothing would call the plugin, and its code
+            // would be reported as unused.
+            #[cfg(not(target_arch = "wasm32"))]
+            let _ = <TessoaExportedPlugin as $crate::bindings::exports::tessoa::plugin::plugin::Guest>::run_command;
         };
     };
 }
