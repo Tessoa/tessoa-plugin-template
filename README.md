@@ -77,7 +77,10 @@ made from them can be used, changed, published and sold without asking anyone
 and without keeping any notice.
 
 The files under `sdk/` are the tessoa plugin SDK. They are not covered by that
-licence and come under the SDK's own terms.
+licence; they come with their own, in `sdk/LICENSE.md`. In short: you may build
+plugins with the SDK, publish and sell those plugins, including the parts of
+the SDK a build puts into them, and keep `sdk/` in your plugin's repository,
+private or public, without asking and without keeping any notice.
 
 ```
 MIT No Attribution

@@ -60,7 +60,9 @@ tessoa-plugin upgrade            # 加 --check 只查看不升级
 模板里的骨架、例子和装环境脚本归你随便用。它们按下面的 MIT No Attribution 许可发布：用它们做出来的插件，
 使用、修改、发布、出售都不用问任何人，也不用保留任何声明。
 
-`sdk/` 下的文件是 tessoa 插件 SDK，不在这份许可之内，按 SDK 自己的条款。
+`sdk/` 下的文件是 tessoa 插件 SDK，不在这份许可之内，另有自己的许可，见 `sdk/LICENSE.zh-CN.md`。简单说：你可以用 SDK
+构建插件，发布、出售这些插件（包括构建时放进插件的 SDK 部分），也可以把 `sdk/` 留在你的插件仓库里，私有、公开都行；
+不用问任何人，也不用保留任何声明。
 
 ```
 MIT No Attribution
