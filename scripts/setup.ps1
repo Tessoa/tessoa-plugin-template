@@ -14,9 +14,9 @@ server it came from; anything else is refused.
 
 -Mirror cn takes Node.js, Rust and their packages from mirrors in mainland
 China (npmmirror, rsproxy), -Mirror official never does, and the default,
-auto, uses the mirrors when the official servers answer slowly or not at all.
-With the mirrors, npm's registry and cargo's crates source are pointed at them
-too, unless they are already set to something else.
+auto, downloads the start of the same file from both and uses whichever was
+faster. With the mirrors, npm's registry and cargo's crates source are pointed
+at them too, unless they are already set to something else.
 
 -NoModifyPath leaves the user's PATH alone; the tools are then reachable by the
 paths printed at the end.
@@ -120,17 +120,39 @@ function Version-Of([string] $Text) {
     return $null
 }
 
-$script:UseMirror = $null
-function Test-Quick([string] $Url) {
+# Bytes per second over the first MiB of a URL, reading for at most four
+# seconds; 0 when nothing arrives.
+function Measure-Rate([string] $Url) {
+    $watch = [Diagnostics.Stopwatch]::StartNew()
+    $req = [Net.HttpWebRequest]::Create($Url)
+    $req.Timeout = 4000
+    $req.ReadWriteTimeout = 4000
+    $req.AddRange(0, 1048575)
+    $total = 0
     try {
-        $watch = [Diagnostics.Stopwatch]::StartNew()
-        Invoke-WebRequest -UseBasicParsing -Uri $Url -TimeoutSec 6 | Out-Null
-        return $watch.Elapsed.TotalSeconds -lt 3
+        $stream = $req.GetResponse().GetResponseStream()
+        $buf = New-Object byte[] 65536
+        while ($total -lt 1048576 -and $watch.Elapsed.TotalSeconds -lt 4) {
+            $n = $stream.Read($buf, 0, $buf.Length)
+            if ($n -le 0) { break }
+            $total += $n
+        }
     } catch {
-        return $false
+        # A timeout or a refused connection; what arrived until then counts.
+    } finally {
+        $req.Abort()
     }
+    return $total / [Math]::Max($watch.Elapsed.TotalSeconds, 0.001)
 }
-function Use-Mirror {
+
+# Whether the downloads come from the mirrors. The first call decides. With
+# -Mirror auto it fetches the start of the file this run is about to download
+# from the official server ($Official) and from the mirror ($Mirrored), and
+# takes the faster: how soon a server answers says little, since from mainland
+# China the official servers answer a small request within a second or two and
+# then send a few hundred KB a second or less.
+$script:UseMirror = $null
+function Use-Mirror([string] $Official, [string] $Mirrored) {
     if ($null -ne $script:UseMirror) { return $script:UseMirror }
     if ($Mirror -eq 'cn') {
         $script:UseMirror = $true
@@ -139,13 +161,12 @@ function Use-Mirror {
         $script:UseMirror = $false
         Say 'using the official servers'
     } else {
-        $fast = (Test-Quick 'https://registry.npmjs.org/-/ping') -and (Test-Quick 'https://static.rust-lang.org/rustup/release-stable.toml')
-        $script:UseMirror = -not $fast
-        if ($script:UseMirror) {
-            Say 'the official servers are slow or out of reach from here; using the mirrors (npmmirror, rsproxy)'
-        } else {
-            Say 'using the official servers'
-        }
+        $o = Measure-Rate $Official
+        $m = Measure-Rate $Mirrored
+        $script:UseMirror = $m -gt $o
+        $which = 'the official servers'
+        if ($script:UseMirror) { $which = 'the mirrors (npmmirror, rsproxy)' }
+        Say ('a test download ran at {0:N0} KB/s from the official servers and {1:N0} KB/s from the mirrors; using {2}' -f ($o / 1KB), ($m / 1KB), $which)
     }
     return $script:UseMirror
 }
@@ -236,6 +257,9 @@ try {
 
     if ($Lang -eq 'ts') {
         $nodeWant = $Versions['node']
+        $nodeName = "node-v$nodeWant-win-x64.zip"
+        $nodeOfficial = "https://nodejs.org/dist/v$nodeWant/$nodeName"
+        $nodeMirror = "https://npmmirror.com/mirrors/node/v$nodeWant/$nodeName"
         $ourNodeDir = Join-Path $Root 'node'
         $ourNode = Join-Path $ourNodeDir 'node.exe'
         $systemNode = Find-Program 'node' @()
@@ -256,9 +280,8 @@ try {
             if ($systemVersion) {
                 Say "Node.js $systemVersion at $systemNode is older than $NodeMajor; installing $nodeWant for tessoa-plugin, which prefers it"
             }
-            $name = "node-v$nodeWant-win-x64.zip"
-            if (Use-Mirror) { $base = "https://npmmirror.com/mirrors/node/v$nodeWant/" } else { $base = "https://nodejs.org/dist/v$nodeWant/" }
-            $zip = Get-Checked ($base + $name) $name
+            if (Use-Mirror $nodeOfficial $nodeMirror) { $url = $nodeMirror } else { $url = $nodeOfficial }
+            $zip = Get-Checked $url $nodeName
             $unpacked = Join-Path $Work 'node'
             Expand-Zip $zip $unpacked
             New-Item -ItemType Directory -Force -Path $Root | Out-Null
@@ -286,7 +309,7 @@ try {
         if (-not (Test-Path -LiteralPath $npm)) { $npm = Find-Program 'npm.cmd' @() }
         if (-not $npm) { throw "npm was not found next to $node" }
         Report 'npm' (First-Line $npm @('--version')) $npm
-        if (Use-Mirror) {
+        if (Use-Mirror $nodeOfficial $nodeMirror) {
             $registry = First-Line $npm @('config', 'get', 'registry')
             if ($registry -eq 'https://registry.npmjs.org/') {
                 & $npm config set registry https://registry.npmmirror.com/ --location=user | Out-Null
@@ -315,16 +338,18 @@ try {
         $cargoBin = Join-Path $cargoHome 'bin'
         $cargo = Find-Program 'cargo' @((Join-Path $cargoBin 'cargo.exe'))
         $rustup = Find-Program 'rustup' @((Join-Path $cargoBin 'rustup.exe'))
-        if (Use-Mirror) {
+        $v = $Versions['rustup']
+        $initOfficial = "https://static.rust-lang.org/rustup/archive/$v/$Target/rustup-init.exe"
+        $initMirror = "https://rsproxy.cn/rustup/archive/$v/$Target/rustup-init.exe"
+        if (Use-Mirror $initOfficial $initMirror) {
             $env:RUSTUP_DIST_SERVER = 'https://rsproxy.cn'
             $env:RUSTUP_UPDATE_ROOT = 'https://rsproxy.cn/rustup'
         }
 
         if (-not $cargo) {
-            $v = $Versions['rustup']
             $name = "rustup-init-$v-$Target.exe"
-            if (Use-Mirror) { $base = "https://rsproxy.cn/rustup/archive/$v/$Target/" } else { $base = "https://static.rust-lang.org/rustup/archive/$v/$Target/" }
-            $init = Get-Checked ($base + 'rustup-init.exe') $name
+            if (Use-Mirror $initOfficial $initMirror) { $url = $initMirror } else { $url = $initOfficial }
+            $init = Get-Checked $url $name
             # The GNU host brings its own linker; the MSVC host would need
             # Visual Studio's. Plugins are WebAssembly either way.
             $hostTriple = 'x86_64-pc-windows-gnu'
@@ -361,7 +386,7 @@ try {
         Report 'cargo' "$(Version-Of (First-Line $cargo @('--version')))" $cargo
         Report 'rustc' "$(Version-Of (First-Line $rustc @('--version')))" $rustc
 
-        if (Use-Mirror) {
+        if (Use-Mirror $initOfficial $initMirror) {
             $config = Join-Path $cargoHome 'config.toml'
             $existing = ''
             if (Test-Path -LiteralPath $config) { $existing = [IO.File]::ReadAllText($config) }

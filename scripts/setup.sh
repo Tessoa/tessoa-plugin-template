@@ -11,9 +11,9 @@
 #
 # --mirror cn takes Node.js, Rust and their packages from mirrors in mainland
 # China (npmmirror, rsproxy), --mirror official never does, and the default,
-# auto, uses the mirrors when the official servers answer slowly or not at all.
-# With the mirrors, npm's registry and cargo's crates source are pointed at
-# them too, unless they are already set to something else.
+# auto, downloads the start of the same file from both and uses whichever was
+# faster. With the mirrors, npm's registry and cargo's crates source are
+# pointed at them too, unless they are already set to something else.
 #
 # --no-modify-path leaves the shell start-up files alone; the tools are then
 # reachable by the paths printed at the end.
@@ -116,26 +116,50 @@ version_of() { printf '%s\n' "$1" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n 
 at_least() { [ "$(printf '%s\n%s\n' "$2" "$1" | sort -t. -k1,1n -k2,2n -k3,3n | head -n 1)" = "$2" ]; }
 first_line() { "$@" 2>/dev/null | head -n 1 || true; }
 
-use_mirror=""
-quick() {
-    # $1 = url; true when it answers within three seconds
-    local t
-    t="$(curl -s -o /dev/null -w '%{time_total}' --max-time 6 "$1" 2>/dev/null)" || return 1
-    awk -v t="$t" 'BEGIN { exit !(t < 3) }'
+# rate URL: bytes per second over the first MiB of URL, reading for at most
+# four seconds; 0 when nothing arrives.
+rate() {
+    local r="" t0 t1
+    if command -v curl >/dev/null 2>&1; then
+        # -L: both mirrors answer with a redirect to their CDN.
+        r="$(curl -sL -o /dev/null -r 0-1048575 --max-time 4 -w '%{speed_download}' "$1" 2>/dev/null || true)"
+    elif command -v wget >/dev/null 2>&1 && command -v timeout >/dev/null 2>&1; then
+        # Linux without curl; GNU date has %N.
+        t0="$(date +%s.%N)"
+        timeout 4 wget -q -O "$work/rate" --header='Range: bytes=0-1048575' "$1" 2>/dev/null || true
+        t1="$(date +%s.%N)"
+        r="$(awk -v s="$(wc -c <"$work/rate" 2>/dev/null || echo 0)" -v a="$t0" -v b="$t1" \
+            'BEGIN { d = b - a; if (d <= 0) d = 0.001; printf "%.0f", s / d }')"
+        rm -f "$work/rate"
+    fi
+    echo "${r:-0}"
 }
+kb() { awk -v r="$1" 'BEGIN { printf "%.0f", r / 1024 }'; }
+
+# mirrored OFFICIAL MIRROR: true when the downloads come from the mirrors. The
+# first call decides. With --mirror auto it fetches the start of the file this
+# run is about to download from the official server and from the mirror (the
+# two URLs) and takes the faster: how soon a server answers says little, since
+# from mainland China the official servers answer a small request within a
+# second or two and then send a few hundred KB a second or less.
+use_mirror=""
 mirrored() {
+    local o m which
     if [ -z "$use_mirror" ]; then
         case "$mirror" in
         cn) use_mirror=1; say "using the mirrors (npmmirror, rsproxy)" ;;
         official) use_mirror=0; say "using the official servers" ;;
         *)
-            if quick https://registry.npmjs.org/-/ping && quick https://static.rust-lang.org/rustup/release-stable.toml; then
-                use_mirror=0
-                say "using the official servers"
-            else
+            o="$(rate "$1")"
+            m="$(rate "$2")"
+            if awk -v o="$o" -v m="$m" 'BEGIN { exit !(m > o) }'; then
                 use_mirror=1
-                say "the official servers are slow or out of reach from here; using the mirrors (npmmirror, rsproxy)"
+                which="the mirrors (npmmirror, rsproxy)"
+            else
+                use_mirror=0
+                which="the official servers"
             fi
+            say "a test download ran at $(kb "$o") KB/s from the official servers and $(kb "$m") KB/s from the mirrors; using $which"
             ;;
         esac
     fi
@@ -195,6 +219,9 @@ fi
 
 if [ "$lang" = ts ]; then
     node_want="$(pinned_version node)"
+    node_name="node-v$node_want-$node_platform.tar.gz"
+    node_official="https://nodejs.org/dist/v$node_want/$node_name"
+    node_mirror="https://npmmirror.com/mirrors/node/v$node_want/$node_name"
     our_node="$root/node/bin/node"
     system_node="$(command -v node 2>/dev/null || true)"
     system_version=""
@@ -213,9 +240,8 @@ if [ "$lang" = ts ]; then
     else
         [ -n "$system_version" ] &&
             say "Node.js $system_version at $system_node is older than $node_major; installing $node_want for tessoa-plugin, which prefers it"
-        name="node-v$node_want-$node_platform.tar.gz"
-        if mirrored; then base="https://npmmirror.com/mirrors/node/v$node_want/"; else base="https://nodejs.org/dist/v$node_want/"; fi
-        archive="$(get "$base$name" "$name")"
+        if mirrored "$node_official" "$node_mirror"; then url="$node_mirror"; else url="$node_official"; fi
+        archive="$(get "$url" "$node_name")"
         mkdir -p "$work/node" "$root"
         tar -xzf "$archive" -C "$work/node"
         rm -rf "$root/node"
@@ -234,7 +260,7 @@ if [ "$lang" = ts ]; then
     # npm is a script that runs node from the PATH.
     export PATH="$(dirname "$node"):$PATH"
     report npm "$(first_line "$npm" --version)" "$npm"
-    if mirrored; then
+    if mirrored "$node_official" "$node_mirror"; then
         registry="$(first_line "$npm" config get registry)"
         if [ "$registry" = "https://registry.npmjs.org/" ]; then
             "$npm" config set registry https://registry.npmmirror.com/ --location=user >/dev/null
@@ -259,20 +285,22 @@ if [ "$lang" = rust ]; then
     [ -z "$cargo" ] && [ -x "$cargo_home/bin/cargo" ] && cargo="$cargo_home/bin/cargo"
     rustup="$(command -v rustup 2>/dev/null || true)"
     [ -z "$rustup" ] && [ -x "$cargo_home/bin/rustup" ] && rustup="$cargo_home/bin/rustup"
-    if mirrored; then
+    rustup_v="$(pinned_version rustup)"
+    init_official="https://static.rust-lang.org/rustup/archive/$rustup_v/$target/rustup-init"
+    init_mirror="https://rsproxy.cn/rustup/archive/$rustup_v/$target/rustup-init"
+    if mirrored "$init_official" "$init_mirror"; then
         export RUSTUP_DIST_SERVER=https://rsproxy.cn
         export RUSTUP_UPDATE_ROOT=https://rsproxy.cn/rustup
     fi
 
     if [ -z "$cargo" ]; then
-        v="$(pinned_version rustup)"
-        name="rustup-init-$v-$target"
-        if mirrored; then base="https://rsproxy.cn/rustup/archive/$v/$target/"; else base="https://static.rust-lang.org/rustup/archive/$v/$target/"; fi
-        init="$(get "${base}rustup-init" "$name")"
+        name="rustup-init-$rustup_v-$target"
+        if mirrored "$init_official" "$init_mirror"; then url="$init_mirror"; else url="$init_official"; fi
+        init="$(get "$url" "$name")"
         chmod 755 "$init"
         args=(-y --profile minimal --default-toolchain stable --target wasm32-wasip2)
         [ "$modify_path" = 0 ] && args+=(--no-modify-path)
-        say "installing Rust (stable) with rustup $v"
+        say "installing Rust (stable) with rustup $rustup_v"
         "$init" "${args[@]}" || die "rustup-init failed"
         cargo="$cargo_home/bin/cargo"
         rustup="$cargo_home/bin/rustup"
@@ -306,7 +334,7 @@ if [ "$lang" = rust ]; then
         fi
     fi
 
-    if mirrored; then
+    if mirrored "$init_official" "$init_mirror"; then
         config="$cargo_home/config.toml"
         if [ -f "$config" ] && grep -q '^\[source\.crates-io\]' "$config"; then
             say "cargo's crates source is already set in $config; left as it is"
