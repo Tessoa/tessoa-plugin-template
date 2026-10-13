@@ -25,6 +25,10 @@ A terminal that was open before the script ran does not see a change to the
 user's PATH. When the tools are not on its PATH, the script ends with a line
 that adds them to it, for PowerShell and for bash.
 
+The Node.js it installs has no npm.ps1 and npx.ps1, so that `npm` and `npx`
+run their .cmd files and work under Windows PowerShell's default execution
+policy too.
+
 TESSOA_PLUGIN_HOME changes where tessoa-plugin and Node.js go (default
 ~\.tessoa-plugin); tessoa-plugin looks there too. TESSOA_PLUGIN_DOWNLOAD
 changes where tessoa-plugin is downloaded from; its sha256 still has to match.
@@ -266,6 +270,16 @@ try {
             # Only when there is no other Node.js: an older one stays the
             # user's default, and tessoa-plugin finds this one by itself.
             if (-not $systemNode) { [void]$PathDirs.Add($ourNodeDir) }
+        }
+
+        # In PowerShell, `npm` finds npm.ps1 before npm.cmd, and the default
+        # execution policy of Windows PowerShell (Restricted) refuses every
+        # .ps1 file: on a fresh Windows, `npm` would fail in a new PowerShell
+        # with "running scripts is disabled on this system". Without the .ps1
+        # files PowerShell runs npm.cmd and npx.cmd, which work under any
+        # policy. Only our copy is changed, never a Node.js the user installed.
+        if ($node -eq $ourNode) {
+            Get-ChildItem -LiteralPath $ourNodeDir -Filter '*.ps1' -File | Remove-Item -Force
         }
 
         $npm = Join-Path (Split-Path -Parent $node) 'npm.cmd'
