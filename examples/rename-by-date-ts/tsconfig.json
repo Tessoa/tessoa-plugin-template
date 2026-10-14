@@ -5,8 +5,10 @@
     "moduleResolution": "Bundler",
     "lib": ["ES2020"],
     "types": ["@tessoa/plugin-sdk"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "@tessoa/plugin-sdk",
     "strict": true,
     "noEmit": true
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

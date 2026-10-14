@@ -1,0 +1,23 @@
+[plugin]
+id = "com.example.shelf"
+name = "Shelf"
+version = "0.1.0"
+api = "tessoa:plugin@0.2.0"
+
+[entry]
+kind = "js"
+file = "dist/plugin.js"
+
+[[commands]]
+id = "add-to-shelf"
+title = "Add to the shelf"
+where = ["context-menu"]
+when = { min-selected = 1 }
+
+[[pages]]
+id = "shelf"
+title = "Shelf"
+single = true
+
+[permissions]
+files = ["keep", "transfer", "delete"]

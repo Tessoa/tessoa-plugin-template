@@ -2,14 +2,15 @@
 
 Every plugin has a `plugin.toml` in its root directory. It is the only file an
 installer reads before looking at the component, so it carries identity, entry
-point, the commands the plugin contributes and the permissions it needs.
+point, the commands and pages the plugin contributes and the permissions it
+needs.
 
 ```toml
 [plugin]
 id = "com.example.rename-by-date"
 name = "Rename by capture date"
 version = "0.1.0"
-api = "tessoa:plugin@0.1.0"
+api = "tessoa:plugin@0.2.0"
 min-host = "0.29.0"
 
 [entry]
@@ -45,7 +46,7 @@ files = ["read-selected", "rename-selected"]
 
 ## `[[commands]]`
 
-One entry per command. A plugin needs at least one.
+One entry per command. A plugin has commands, pages or both.
 
 | Key | Meaning |
 |---|---|
@@ -54,6 +55,31 @@ One entry per command. A plugin needs at least one.
 | `where` | Where the command appears. This version knows `context-menu`. |
 | `when` | Optional filter: `ext` (extensions without the dot; empty or absent means any file), `min-selected`, `max-selected`. |
 
+## `[[pages]]`
+
+One entry per page: a whole tab the plugin describes and tessoa draws.
+
+```toml
+[[pages]]
+id = "calculator"
+title = "Calculator"
+icon = "icon.svg"
+single = false
+where = ["tab"]
+```
+
+| Key | Meaning |
+|---|---|
+| `id` | Unique among the pages of the plugin, same character rules as the plugin id. This is the `kind` the plugin's `open` receives and `pages-host.open` names. |
+| `title` | The menu text and the tab title until the page sets its own. |
+| `icon` | Optional. A `.png` or `.svg` file inside the plugin directory (at most 256 by 256 pixels and 64 KiB), written with `/`, or a name from tessoa's icon set. tessoa draws a placeholder for a file it cannot use. |
+| `single` | Optional, `false` by default. `true` means one page of this kind per window: opening it again focuses the one that is open. Another window may open its own, showing the same data. |
+| `where` | Optional, `["tab"]` by default: the page opens as a tab, from the extension page menus of the tab bar and of the file list. |
+
+A plugin with pages is built for the world `tessoa-plugin-pages`, which
+exports the page functions. Declaring pages in a component built without them
+is reported when the plugin is installed.
+
 ## `[permissions]`
 
 A table with one array per category. The names are documented in
@@ -61,8 +87,8 @@ A table with one array per category. The names are documented in
 
 Write permissions as a table, not as a top-level array: TOML attaches a
 top-level key that follows an `[[array]]` entry to that entry, so an array
-after `[[commands]]` would become a field of the last command. The parser
-reports that case.
+after `[[commands]]` or `[[pages]]` would become a field of the last entry.
+The parser reports that case.
 
 ## Rules
 

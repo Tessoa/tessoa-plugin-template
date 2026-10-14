@@ -1,0 +1,26 @@
+name = "The shelf keeps its files when tessoa restarts"
+
+[[files]]
+from = "text/three-lines.txt"
+as = "a.txt"
+
+[[files]]
+from = "text/empty.txt"
+as = "b.txt"
+
+[[steps]]
+open-page = "shelf"
+
+[[steps]]
+drop-files = { onto = "zone", files = ["a.txt", "b.txt"] }
+
+[[steps]]
+toggle = "check-1"
+
+# The files come from the storage; what was checked is not saved.
+[[steps]]
+restart = true
+expect-children = { key = "zone", keys = ["row-1", "row-2"] }
+expect-tree-contains = [{ key = "file-1", file = "a.txt" }, { key = "file-2", file = "b.txt" }]
+expect-text = { key = "all", text = "2 files" }
+expect-title = "Shelf (2)"

@@ -1,0 +1,16 @@
+[plugin]
+id = "com.example.calculator-ts"
+name = "Calculator"
+version = "0.1.0"
+api = "tessoa:plugin@0.2.0"
+
+[entry]
+kind = "js"
+file = "dist/plugin.js"
+
+[[pages]]
+id = "calculator"
+title = "Calculator"
+
+[permissions]
+clipboard = ["write"]

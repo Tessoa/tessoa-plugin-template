@@ -11,21 +11,41 @@ Rust plugin.
 my-plugin/
   plugin.toml          entry.kind = "js", entry.file = "dist/plugin.js"
   package.json         build script, dev dependencies
-  tsconfig.json        "types": ["@tessoa/plugin-sdk"]
+  tsconfig.json        "types": ["@tessoa/plugin-sdk"], the JSX settings
   src/plugin.ts        export async function run(commandId: string)
+                       (src/plugin.tsx for a plugin with pages)
   tests/scenarios/     see testing.md
   tests/fixtures/
 ```
 
-The build checks the types, then bundles `src/plugin.ts` into one file whose
-exports land on a global named `plugin`:
+The build checks the types, then bundles `src/plugin.ts` or
+`src/plugin.tsx` into one file whose exports land on a global named `plugin`:
 
 ```
-tsc --noEmit && esbuild src/plugin.ts --bundle --format=iife --global-name=plugin --target=es2020 --outfile=dist/plugin.js
+tsc --noEmit && esbuild ./src/plugin --bundle --format=iife --global-name=plugin --target=es2020 --jsx=automatic --jsx-import-source=@tessoa/plugin-sdk --outfile=dist/plugin.js
 ```
 
 The bundler alone does not check types, so without the first half a call to a
-function that does not exist would only fail when the plugin runs.
+function that does not exist would only fail when the plugin runs. Written as
+`./src/plugin`, without an extension, the entry is whichever of the two files
+exists; keep only one of them.
+
+## JSX
+
+Pages are written in JSX ([pages.md](pages.md)). Two settings make it work,
+and both are already in a project made from the template:
+
+- `tsconfig.json`: `"jsx": "react-jsx"` and `"jsxImportSource":
+  "@tessoa/plugin-sdk"` in `compilerOptions`, and `"src/**/*.tsx"` in
+  `include`.
+- the build: `--jsx=automatic --jsx-import-source=@tessoa/plugin-sdk` for
+  esbuild.
+
+They change nothing for a plugin without JSX. The JSX runtime is the SDK's
+own, about twenty lines that turn elements into plain objects; it is not
+React and needs no DOM. Element names are the node kinds: `<column>`,
+`<text>`, `<button>`, `<text-input>`, `<file-row>` and so on, declared in
+`types/pages.d.ts` with every attribute.
 
 The engine calls `plugin.run(commandId)` for every command and waits for the
 returned promise. A plain JavaScript file can do the same by assigning
@@ -52,6 +72,21 @@ it; in short:
 `permission-denied` or `io` when the host refuses the call. An error thrown
 out of `run`, or a rejected promise, ends the command with its message in the
 log.
+
+For pages:
+
+| Call | Notes |
+|---|---|
+| `tessoa.pages.define(kind, { open, render, save, title, keys, onKey, onTransferDone, onActivated, close })` | Defines a kind of page declared in `plugin.toml`; call it when the script loads. See [pages.md](pages.md). |
+| `tessoa.pages.h(type, props, ...children)` | An element without JSX. |
+| `tessoa.pagesHost.open(kind, args?)` | Opens a page of the plugin, or brings a `single` one to the front; returns its id. `args` is any JSON value. |
+| `tessoa.pagesHost.setTitle(page, title)` | Changes the title of the page's tab. |
+| `await tessoa.ui.confirm(...)` in a page's handler | Asks without holding the page up; the handler goes on with the answer. |
+| `tessoa.files.keep(handle)` | A reference to a selected file that outlives the command. Needs `files.keep`. |
+| `tessoa.refs.info`, `release`, `copyToPicked`, `moveToPicked`, `trash`, `open`, `reveal` | Work on file references; see the table in [pages.md](pages.md#files). |
+| `tessoa.storage.get(key)`, `set(key, bytes)`, `remove(key)`, `keys()` | The plugin's own storage, shared by its pages and commands and kept across restarts. Values are `Uint8Array`; store JSON with `TextEncoder`. |
+| `tessoa.clipboard.writeText(text)` | Needs `clipboard.write`. |
+| `tessoa.ui.language()` | `en`, `zh`, `ja` or `de`, for the plugin's own texts. |
 
 ## Text
 

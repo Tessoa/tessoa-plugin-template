@@ -10,8 +10,6 @@ Used by the JavaScript engine component only. Plugin authors never see it.
 
 ```
 wit  get-script: func() -> string
-rust tessoa_plugin_sdk::script_source::get_script() -> String
-ts   tessoa.scriptSource.getScript(): string
 ```
 
 The plugin's bundled JavaScript source, read by the host from the file

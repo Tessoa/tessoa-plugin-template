@@ -1,0 +1,31 @@
+name = "The command puts the selected files on the shelf and shows it"
+
+[[files]]
+from = "text/three-lines.txt"
+as = "a.txt"
+
+[[files]]
+from = "text/empty.txt"
+as = "b.txt"
+
+[[files]]
+from = "text/no-final-newline.txt"
+as = "not-selected.txt"
+selected = false
+
+# No shelf is open: the command opens one.
+[[steps]]
+run = "add-to-shelf"
+expect-children = { key = "zone", keys = ["row-1", "row-2"] }
+expect-title = "Shelf (2)"
+
+[[steps]]
+drop-files = { onto = "zone", files = ["not-selected.txt"] }
+expect-text = { key = "status", text = "Added 1 file." }
+
+# The shelf is open now: the command shows it again, and the files that are
+# on it already stay one row each.
+[[steps]]
+run = "add-to-shelf"
+expect-children = { key = "zone", keys = ["row-1", "row-2", "row-3"] }
+expect-text = { key = "status", text = "Added 1 file." }

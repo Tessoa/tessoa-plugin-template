@@ -11,6 +11,8 @@ autoexamples = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+# A plugin with pages needs the SDK's pages feature:
+# tessoa-plugin-sdk = { path = "sdk/rust", features = ["pages"] }
 tessoa-plugin-sdk = { path = "sdk/rust" }
 
 # tessoa-plugin builds with --release. A panic aborts, which the sandbox

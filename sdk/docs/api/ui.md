@@ -30,6 +30,9 @@ ts   tessoa.ui.confirm(title: string, body: string, okLabel?: string, cancelLabe
 
 Ask a yes/no question and wait for the answer.
 Returns true when the user pressed the `ok-label` button.
+A page must not wait: in a page call this returns false at once and
+the call is reported as refused. Pages ask with `pages-host.ask`,
+which `tessoa.ui.confirm` in TypeScript does by itself in a page.
 
 Permission: none.
 
@@ -43,5 +46,18 @@ ts   tessoa.ui.confirmList(title: string, body: string, items: string[], okLabel
 
 Like `confirm`, with one line per item shown between the body and the
 buttons. Use it to preview a batch change before applying it.
+
+Permission: none.
+
+### language
+
+```
+wit  language: func() -> string
+rust tessoa_plugin_sdk::ui::language() -> String
+ts   tessoa.ui.language(): string
+```
+
+The language tessoa shows its interface in, as a short code such as
+`en`, `zh`, `ja` or `de`. Use it to pick the plugin's own texts.
 
 Permission: none.

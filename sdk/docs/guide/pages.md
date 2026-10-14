@@ -1,0 +1,356 @@
+# Pages
+
+A page is a whole tab that a plugin fills: a calculator, a shelf of files, a
+task board. The plugin describes what the page shows as a tree of nodes;
+tessoa draws it with its own widgets, in the user's theme, component style,
+language and scale, and tells the plugin what the user did. The plugin never
+draws, never sees pixels or fonts, and needs no permission for the page
+itself.
+
+Complete pages to copy from, each with page scenarios in its
+`tests/scenarios`:
+
+| Example | Shows |
+|---|---|
+| `examples/calculator-ts`, `examples/calculator-rs` | The same page in both languages: buttons, declared keys, the clipboard, state that survives a restart. |
+| `examples/shelf-ts` | Files: a drop zone, file rows, copy, move and trash done by tessoa, a command that opens the page. |
+| `examples/kanban-ts` | A board: draggable cards, a card menu, a field of several lines, a question before deleting, data shared by every page. |
+
+## Command or page
+
+| | Command | Page |
+|---|---|---|
+| The user | selects files and picks the command from the context menu | opens the page from tessoa's menus (a right click on the tab bar, or on an empty spot of a folder), or a command opens it |
+| It runs | once, on those files, then ends | as long as its tab is open |
+| Good for | renaming, counting, converting, tagging | a tool, a place to collect things, a board |
+
+A plugin can have both. The shelf has a command, "Add to the shelf", that
+puts the selected files on the shelf and shows it.
+
+## The rules of a page
+
+1. **Describe the whole page, every time.** `render` returns the full tree;
+   tessoa compares it with the previous one and redraws what changed. There
+   is no partial update and nothing to compare yourself.
+2. **Handlers change the state; the SDK renders.** After every event and
+   every command, every open page of the plugin is rendered again. Do not ask
+   for a render, and do not update another page by hand: two board pages that
+   show the same data stay in step by themselves.
+3. **Give every node the user acts on a key.** Events name nodes by their
+   key, and so do the scenarios. A key is unique within the whole page, not
+   only among siblings, so in a list build it from the item's id (`card-12`),
+   never from its position. A node with a handler and no key gets one from
+   its position (`#4`); that key changes when nodes before it come and go,
+   which breaks scenarios and loses what the user typed.
+4. **A text field keeps what the user typed.** `value` is what the page
+   gives the field; the field keeps the user's text until a render gives it a
+   different value. `onSubmit` (Enter, or Ctrl+Enter in a field of several
+   lines) receives the field's text; keep the text in the state from
+   `onInput` when the page needs it earlier, for example to enable a button.
+5. **A page never waits.** `await tessoa.ui.confirm(...)` in a TypeScript
+   handler, or `pages::confirm` in Rust, shows the question and returns at
+   once; this page and the plugin's other pages keep working, and the answer
+   arrives later. Ask only before something that cannot be undone. A Cancel
+   button on the page is better than a dialog.
+6. **Declare the keys the page handles.** While the page has the focus and no
+   text field is focused, the declared keys go to the page; every other key
+   works as it does elsewhere in tessoa. See [Keys](#keys).
+7. **Files come from the user.** A page shows a file only by a file reference
+   the plugin got from the user: files dropped on a drop zone, or files a
+   command kept with `files.keep`. References stay valid across restarts.
+   The plugin never sees a path. See [Files](#files).
+8. **Save what the page needs after a restart.** What `save` returns (at
+   most 16 KiB) is kept by tessoa and given back to `open` when tessoa starts
+   again. Data that every page shows, such as the cards of a board, belongs in
+   the plugin's storage (`tessoa.storage`, at most 1 MiB, no permission
+   needed); the page state is for what belongs to one tab, such as a draft.
+9. **tessoa chooses the look.** A page names sizes (`caption` to `display`),
+   tones (`dim`, `accent`, `danger`, `success`), spacing (`xs` to `l`) and
+   button kinds; it cannot pick colours, fonts or pixel sizes, and needs no
+   translation of tessoa's own texts. `tessoa.ui.language()` returns the
+   language code for the plugin's own texts.
+
+A render that fails, or a tree that breaks the rules below, shows an error in
+place of the page. An event that fails goes to the plugin log; the page stays.
+A plugin that crashes or hits a limit stops every page it has open, and the
+user can reload them.
+
+## The tree
+
+| Node | JSX | Rust | Notes |
+|---|---|---|---|
+| column | `<column>` | `col([...])` | Children top to bottom. |
+| row | `<row>` | `row([...])` | Children left to right. |
+| card | `<card>` | `card([...])` | A column with a frame and a background. |
+| divider | `<divider />` | `divider()` | A thin line across the parent. |
+| spacer | `<spacer />` | `spacer()` | Empty space; with `grow`, pushes its siblings apart. |
+| text | `<text>Hi</text>` | `text("Hi")` | `size`, `tone`, `align` (start, center, end), `wrap`. |
+| button | `<button onClick={f}>Add</button>` | `btn("Add")` | `kind` (normal, primary, danger, quiet), `icon`, `disabled`. |
+| icon-button | `<icon-button icon="x" label="Close" />` | `icon_btn("x", "Close")` | The label is the tooltip. |
+| text-input | `<text-input value={v} />` | `text_input(v)` | `placeholder`, `disabled`, `multiline`. |
+| checkbox | `<checkbox checked={c}>Done</checkbox>` | `checkbox(c, "Done")` | |
+| file-row | `<file-row file={ref} />` | `file_row(r)` | One file, drawn by tessoa: icon, name, size, dimmed when gone. Double click opens it; the user can drag it out; its context menu is tessoa's file menu. `selected`, `draggable` (default true). |
+| drop-zone | `<drop-zone accepts="files">` | `drop_zone(Accepts::Files, [...])` | Takes files, items or both; `hint` shows while nothing is dragged over it. |
+| draggable | `<draggable payload="c1">` | `draggable("c1", [...])` | Its children can be dragged onto a drop zone that takes items. |
+
+Every node takes `key`, `grow`, `w`, `h`, `pad`, `gap`, `justify`, `scroll` and
+`menu`; a container also takes `align` and `wrap`. Only column, row, card,
+drop-zone and draggable have children. In Rust the attributes are methods:
+`text("0").key("display").size(TextSize::Display).align(Align::End)`.
+
+Layout works like a flexible box: children stretch across the direction of
+their parent unless `align` says otherwise, and `grow` shares the length that
+is left along it. `w` and `h` are `"auto"` (as large as the content), `"fill"`
+(as large as the parent allows) or a number of em.
+
+A small menu: any node can have `menu={[{ id: "rename", label: "Rename" }, { id:
+"delete", label: "Delete", danger: true }]}` (Rust: `.menu([item("rename",
+"Rename"), item("delete", "Delete").danger()])`). A right click on the node
+opens it, and so does a left click on a button that does nothing else;
+choosing an item calls `onMenu(id)` (Rust: `Event::Menu { key, item }`).
+
+Limits: 4096 nodes and 1 MiB per tree; at most 20 renders a second per page,
+more are merged.
+
+## Keys
+
+A key is written the way it types: a character such as `8`, `+` or `a` (`A`
+with Shift), or one of the names `Enter`, `Escape`, `Backspace`, `Delete`,
+`Tab`, `Space`, `ArrowUp`, `ArrowDown`, `ArrowLeft`, `ArrowRight`, `Home`,
+`End`, `PageUp`, `PageDown` and `F1` to `F12`. `Ctrl+`, `Alt+` and `Meta+` in
+front add a modifier (`Ctrl+z`); `Shift+` does so only in front of a name
+(`Shift+Tab`). A pressed key arrives as it was declared: `k.key === "Ctrl+c"`.
+Write both `Ctrl+c` and `Meta+c` for a shortcut that should work on every
+platform. Ctrl+Shift combinations and Ctrl+Tab always stay with tessoa.
+
+```ts
+keys: ["0", "1", "+", "Enter", "Backspace", "Escape", "Ctrl+c", "Meta+c"],
+onKey: (c, k) => press(c, k.key),
+```
+
+## Files
+
+| What | TypeScript | Rust | Permission |
+|---|---|---|---|
+| Files dropped on a zone | `onDropFiles={(files) => ...}` on a `drop-zone` | `Event::DropFiles { zone, files }` | none |
+| Keep a selected file in a command | `tessoa.files.keep(handle)` | `files::keep(handle)` | `files.keep` |
+| Name, size, date, whether it still exists | `tessoa.refs.info(refs)` | `refs::info(&refs)` | none |
+| Copy or move to a folder the user picks | `tessoa.refs.copyToPicked(refs)`, `moveToPicked(refs)` | `refs::copy_to_picked(&refs)`, `move_to_picked` | `files.transfer` |
+| Move to the recycle bin, after tessoa's confirmation | `tessoa.refs.trash(refs)` | `refs::trash(&refs)` | `files.delete` |
+| Open, or show in a new tab | `tessoa.refs.open(ref)`, `reveal(ref)` | `refs::open(r)`, `reveal(r)` | `files.open` |
+| Forget references | `tessoa.refs.release(refs)` | `refs::release(&refs)` | none |
+
+Copy, move and trash return a transfer id at once. tessoa shows its folder
+picker or its confirmation, does the work with its progress, conflict
+handling and undo, and reports one outcome per file to the page that started
+it: `onTransferDone(state, id, outcomes)` in TypeScript, `Event::TransferDone
+{ id, outcomes }` in Rust. An outcome is done, skipped with a reason (the
+user cancelled, for instance) or failed with a reason: `{ done: true }`,
+`{ skipped: why }`, `{ failed: why }` in TypeScript, `TransferOutcome::Done`,
+`Skipped(why)`, `Failed(why)` in Rust. A transfer started by a command
+reports to no page.
+
+## In TypeScript
+
+Pages are written in JSX: name the file `src/plugin.tsx` (a project from the
+template builds `src/plugin.ts` or `src/plugin.tsx`, whichever exists). The
+state is a plain object that `open` builds and the handlers change in place.
+
+```tsx
+interface Counter {
+  count: number;
+}
+
+tessoa.pages.define<Counter>("counter", {
+  open: ({ state }) => ({ count: typeof state === "number" ? state : 0 }),
+  save: (c) => c.count,
+  keys: ["+"],
+  onKey: (c) => {
+    c.count += 1;
+  },
+  render: (c) => (
+    <column pad="m" gap="s">
+      <text key="count" size="title">{c.count}</text>
+      <button
+        key="add"
+        onClick={() => {
+          c.count += 1;
+        }}
+      >
+        Add
+      </button>
+    </column>
+  ),
+});
+```
+
+- `save` returns any value JSON can hold, and `open` receives it parsed
+  (`undefined` for a new page; check its shape, an older version of the
+  plugin may have saved it). A `Set` or a `Map` does not survive JSON; save
+  an array.
+- Handlers may be `async`: `await tessoa.ui.confirm(...)` waits for the
+  answer without holding up the page. Calling it in `render` throws.
+- `tessoa.pagesHost.open(kind, args)` opens a page from a command or another
+  page; `open` receives `args` parsed. `tessoa.pagesHost.setTitle(page, title)`
+  or a `title` function changes the tab's title.
+- A script that is not built uses `tessoa.pages.h(type, props, ...children)`
+  instead of JSX.
+
+## In Rust
+
+Turn on the SDK's `pages` feature in `Cargo.toml`:
+
+```toml
+tessoa-plugin-sdk = { path = "sdk/rust", features = ["pages"] }
+```
+
+Without it, `use tessoa_plugin_sdk::pages::*` fails with an unresolved import
+and `export_pages!` says what to add. Then implement `Page` and export it
+instead of calling `export!`:
+
+```rust
+use tessoa_plugin_sdk::pages::*;
+
+struct Counter {
+    count: u32,
+}
+
+impl Page for Counter {
+    fn open(_page: PageId, state: Option<Vec<u8>>, _args: Option<Vec<u8>>) -> Self {
+        let count = state
+            .and_then(|s| String::from_utf8(s).ok())
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(0);
+        Counter { count }
+    }
+
+    fn event(&mut self, event: Event) -> Result<(), String> {
+        match event {
+            Event::Click { key } if key == "add" => self.count += 1,
+            Event::Key(_) => self.count += 1,
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn render(&self) -> Node {
+        col([
+            text(self.count.to_string()).key("count").size(TextSize::Title),
+            btn("Add").key("add"),
+        ])
+        .pad(Space::M)
+        .gap(Space::S)
+    }
+
+    fn keys(&self) -> Vec<String> {
+        vec!["+".into()]
+    }
+
+    fn save(&self) -> Option<Vec<u8>> {
+        Some(self.count.to_string().into_bytes())
+    }
+}
+
+tessoa_plugin_sdk::export_pages!(Counter => "counter");
+```
+
+- One value of the type is one open page. Keep the `page` that `open`
+  receives if the page asks questions or sets its title.
+- State and arguments are bytes; the format is yours.
+- `pages::confirm(page, title, body)` returns a dialog id at once; the answer
+  arrives as `Event::Dialog { id, ok }`. The blocking `ui::confirm` is
+  refused in a page and reads as cancel.
+- A plugin with pages and commands: `export_pages!(Shelf => "shelf";
+  commands: MyCommands)`, where `MyCommands` implements `Plugin`.
+
+## The two languages side by side
+
+| | TypeScript | Rust |
+|---|---|---|
+| Define a page | `tessoa.pages.define("kind", { ... })` | `impl Page for T` and `export_pages!(T => "kind")` |
+| Build the state | `open({ page, state, args })` | `fn open(page, state, args) -> Self` |
+| Describe the page | `render(state)` returning JSX | `fn render(&self) -> Node` |
+| A button press | `onClick` on the element | `Event::Click { key }` |
+| A text field | `onInput(text)`, `onSubmit(text)` | `Event::Input { key, text }`, `Event::Submit { key, text }` |
+| A checkbox | `onToggle(checked)` | `Event::Toggle { key, checked }` |
+| A declared key | `keys` and `onKey(state, key)` | `fn keys(&self)` and `Event::Key(k)` |
+| A drop | `onDropFiles(files)`, `onDropItem(payload, before)` | `Event::DropFiles`, `Event::DropItem` |
+| A menu item | `onMenu(item)` | `Event::Menu { key, item }` |
+| A question | `await tessoa.ui.confirm(...)` | `pages::confirm(...)`, then `Event::Dialog` |
+| A transfer's outcome | `onTransferDone(state, id, outcomes)` | `Event::TransferDone { id, outcomes }` |
+| The tab title | `title(state)` | `fn title(&self)` |
+| Kept across restarts | `save(state)`, any JSON value | `fn save(&self)`, bytes |
+
+## Testing a page
+
+A page scenario opens the page and plays the user, one step at a time, and
+checks the page after each step; `tessoa-plugin test` runs it like any other
+scenario. The steps and checks are in [testing.md](testing.md#page-scenarios).
+
+```toml
+name = "Adds by button and by key"
+
+[[steps]]
+open-page = "calculator"
+
+[[steps]]
+click = "k1"
+expect-text = { key = "display", text = "1" }
+
+[[steps]]
+click = "add"
+
+[[steps]]
+key = "3"
+
+[[steps]]
+key = "Enter"
+expect-text = { key = "display", text = "4" }
+```
+
+`tessoa-plugin render` prints the page as tessoa receives it, one line per
+node: its kind, what it shows, its key, and every attribute that is not the
+default. `--steps tests/scenarios/<file>.toml` prints it after the steps of a
+scenario. The calculator, freshly opened:
+
+```
+page 1 calculator: "Calculator"
+keys: 0 1 2 3 4 5 6 7 8 9 . + - * / = Enter Backspace Escape Delete Ctrl+c Meta+c
+state: "{\"display\":\"0\",\"acc\":null,\"op\":null,\"fresh\":true}"
+column pad=m gap=s
+  text "" key=pending size=caption tone=dim align=end
+  text "0" key=display size=display align=end
+  row gap=s
+    button "C" key=clear grow
+    button "⌫" key=back grow
+    button "÷" key=div grow
+    button "×" key=mul grow
+  row gap=s
+    button "7" key=k7 grow
+    button "8" key=k8 grow
+    button "9" key=k9 grow
+    button "−" key=sub grow
+  row gap=s
+    button "4" key=k4 grow
+    button "5" key=k5 grow
+    button "6" key=k6 grow
+    button "+" key=add grow
+  row gap=s
+    button "1" key=k1 grow
+    button "2" key=k2 grow
+    button "3" key=k3 grow
+    button "=" key=eq kind=primary grow
+  row gap=s
+    button "0" key=k0 grow
+    button "." key=dot grow
+    button "Copy" key=copy grow
+```
+
+The Rust calculator prints the same lines; only the state differs, since
+each language saves it its own way.
+
+## The manifest
+
+Each kind of page is a `[[pages]]` entry in `plugin.toml` with an `id`, a
+`title`, optionally an `icon` and `single`; see [manifest.md](manifest.md).
+A plugin may have pages and no commands.

@@ -1,23 +1,26 @@
 // Plugin interface for tessoa.
 //
-// Version 0.1 covers what a context-menu command needs in order to rename the
-// files the user selected. Further capabilities (columns, settings, network,
-// clipboard) arrive as separate interfaces in later versions.
+// Version 0.2 covers context-menu commands that work on the files the user
+// selected, and pages: whole tabs a plugin describes and tessoa draws.
 //
 // Rules that every interface here follows:
 //
 // - Plugins never see paths. The host hands out numeric handles for the files
-//   the user selected for this command; the handles expire when the command
-//   returns.
+//   the user selected for a command; the handles expire when the command
+//   returns. A file the plugin wants to keep beyond that becomes a file
+//   reference, which the host issues and stores; again the plugin sees a
+//   number, never the path.
 // - Anything that changes the file system is a request to the host. The host
 //   applies its own conflict handling, recycle bin, undo and activity log.
-// - Dialogs block: `confirm` returns after the user pressed a button. The
-//   runner suspends the plugin while it waits, so the host stays responsive.
-// - Once the interface is frozen for the public beta this file only grows: new
-//   functions, new variant cases, new interfaces. Existing signatures do not
-//   change, and a synchronous function never becomes asynchronous.
+// - Dialogs in a command block: `confirm` returns after the user pressed a
+//   button. The runner suspends the plugin while it waits, so the host stays
+//   responsive. Pages never block: a page asks with `pages-host.ask` and the
+//   answer arrives later as an event.
+// - Once the interface is published this file only grows: new functions, new
+//   variant cases, new interfaces. Existing signatures do not change, and a
+//   synchronous function never becomes asynchronous.
 
-package tessoa:plugin@0.1.0;
+package tessoa:plugin@0.2.0;
 
 /// Plugin log. Lines go to the plugin log panel and the plugin log file.
 /// Available without declaring a permission.
@@ -42,11 +45,18 @@ interface ui {
 
     /// Ask a yes/no question and wait for the answer.
     /// Returns true when the user pressed the `ok-label` button.
+    /// A page must not wait: in a page call this returns false at once and
+    /// the call is reported as refused. Pages ask with `pages-host.ask`,
+    /// which `tessoa.ui.confirm` in TypeScript does by itself in a page.
     confirm: func(title: string, body: string, ok-label: string, cancel-label: string) -> bool;
 
     /// Like `confirm`, with one line per item shown between the body and the
     /// buttons. Use it to preview a batch change before applying it.
     confirm-list: func(title: string, body: string, items: list<string>, ok-label: string, cancel-label: string) -> bool;
+
+    /// The language tessoa shows its interface in, as a short code such as
+    /// `en`, `zh`, `ja` or `de`. Use it to pick the plugin's own texts.
+    language: func() -> string;
 }
 
 /// The files the user handed to the current command.
@@ -55,6 +65,11 @@ interface files {
     /// Handles are issued by the host when the command starts and are invalid
     /// after it returns.
     type handle = u32;
+
+    /// Identifies a file the host keeps for the plugin, across commands and
+    /// across restarts. References come from the user: a file kept with
+    /// `keep`, or a file dropped on a page. The plugin sees the number only.
+    type file-ref = u64;
 
     record file-info {
         handle: handle,
@@ -68,11 +83,12 @@ interface files {
     }
 
     variant error {
-        /// The handle was not issued for this command.
+        /// The handle or reference was not issued to this plugin, or is no
+        /// longer valid.
         not-granted(string),
         /// The manifest does not declare the permission this call needs.
         permission-denied(string),
-        /// The file system reported an error.
+        /// The file system or the host reported an error.
         io(string),
     }
 
@@ -105,6 +121,112 @@ interface files {
     /// failure does not stop the others.
     /// Requires the `files.rename-selected` permission.
     rename: func(items: list<rename-request>) -> result<list<rename-outcome>, error>;
+
+    /// Turn a selected file into a reference that stays valid after the
+    /// command returns, and after tessoa restarts. The host follows the file
+    /// when tessoa moves or renames it.
+    /// Requires the `files.keep` permission.
+    keep: func(handle: handle) -> result<file-ref, error>;
+}
+
+/// Files the host keeps for the plugin. Every function works on references
+/// issued to this plugin; any other reference is refused.
+interface refs {
+    use files.{file-ref, error};
+
+    record ref-info {
+        ref: file-ref,
+        /// File name without the directory.
+        name: string,
+        /// Size in bytes; 0 for a folder or a file that is gone.
+        size: u64,
+        /// Last modification time as Unix epoch milliseconds.
+        modified-ms: s64,
+        is-dir: bool,
+        /// False when the file is no longer where the host last saw it.
+        exists: bool,
+    }
+
+    /// What happened to one file of a copy, a move or a delete.
+    variant transfer-outcome {
+        /// Copied, moved, or moved to the recycle bin.
+        done,
+        /// Left alone, for example because the user cancelled. Carries the
+        /// reason.
+        skipped(string),
+        /// Failed. Carries the reason.
+        failed(string),
+    }
+
+    /// Describe references. References that were never issued to this plugin,
+    /// or were released, are left out of the result.
+    info: func(refs: list<file-ref>) -> list<ref-info>;
+
+    /// Forget references. The files themselves are not touched.
+    release: func(refs: list<file-ref>);
+
+    /// Let the user pick a folder and copy the files there, with tessoa's
+    /// progress, conflict handling and undo. Returns at once with a transfer
+    /// id; the outcome arrives as a `transfer-done` event of the page that
+    /// made the call.
+    /// Requires the `files.transfer` permission.
+    copy-to-picked: func(refs: list<file-ref>) -> result<u64, error>;
+
+    /// Like `copy-to-picked`, moving instead of copying. The references
+    /// follow the files.
+    /// Requires the `files.transfer` permission.
+    move-to-picked: func(refs: list<file-ref>) -> result<u64, error>;
+
+    /// Open the file the way a double click in tessoa would.
+    /// Requires the `files.open` permission.
+    open: func(ref: file-ref) -> result<_, error>;
+
+    /// Show the file in a new tessoa tab, selected.
+    /// Requires the `files.open` permission.
+    reveal: func(ref: file-ref) -> result<_, error>;
+
+    /// Move the files to the recycle bin (the Trash on macOS). tessoa always
+    /// asks the user first, in its own dialog that names the plugin; the
+    /// plugin cannot skip that. Returns at once with a transfer id; the
+    /// outcome arrives as a `transfer-done` event of the page that made the
+    /// call.
+    /// Requires the `files.delete` permission.
+    trash: func(refs: list<file-ref>) -> result<u64, error>;
+}
+
+/// The plugin's own storage: keys and values that survive restarts, are
+/// shared by all of the plugin's pages and commands, and go with tessoa's
+/// settings backup. At most 1 MiB in total, keys and values counted; one
+/// value at most 256 KiB, one key at most 128 bytes.
+/// Available without declaring a permission.
+interface storage {
+    enum error {
+        /// The value, or the storage as a whole, would exceed its limit.
+        quota,
+        /// The key is longer than 128 bytes.
+        key-too-long,
+    }
+
+    /// The value stored under `key`, if any.
+    get: func(key: string) -> option<list<u8>>;
+
+    /// Store `value` under `key`, replacing what was there.
+    set: func(key: string, value: list<u8>) -> result<_, error>;
+
+    /// Remove `key`. Removing a key that does not exist does nothing.
+    remove: func(key: string);
+
+    /// Every key, in byte order.
+    keys: func() -> list<string>;
+}
+
+/// The system clipboard.
+interface clipboard {
+    use files.{error};
+
+    /// Put text on the clipboard.
+    /// Requires the `clipboard.write` permission.
+    write-text: func(text: string) -> result<_, error>;
 }
 
 /// What every plugin exports.
@@ -114,12 +236,317 @@ interface plugin {
     run-command: func(command-id: string) -> result<_, string>;
 }
 
+/// What the host does for a plugin's pages.
+/// Available without declaring a permission.
+interface pages-host {
+    /// Identifies one open page. The host issues it when the page opens; it
+    /// is unique among all open pages of all plugins.
+    type page-id = u64;
+
+    /// Ask for the page to be rendered again. The host calls `render` once
+    /// the current call into the plugin returns, at most 20 times a second
+    /// per page; several requests in between are one render.
+    invalidate: func(page: page-id);
+
+    /// Open a page of this plugin, declared in the manifest under `kind`.
+    /// A page declared `single` that is already open in the window is
+    /// focused instead, and its id returned; `args` then reach no page.
+    /// From a command, the page opens in the window the command ran in.
+    open: func(kind: string, args: option<list<u8>>) -> result<page-id, string>;
+
+    /// Change the title of the page's tab.
+    set-title: func(page: page-id, title: string);
+
+    /// Ask a yes/no question on behalf of a page. Returns at once with a
+    /// dialog id; the answer arrives as a `dialog` event of that page. With
+    /// items, the dialog shows one line per item, like `ui.confirm-list`.
+    /// Returns 0 when the page is not open.
+    ask: func(page: page-id, title: string, body: string, items: list<string>, ok-label: string, cancel-label: string) -> u64;
+}
+
+/// What a plugin with pages exports. A page is a whole tab: the plugin
+/// describes its content as a tree of nodes, tessoa draws it with its own
+/// widgets, and tells the plugin what the user did. The description is the
+/// whole page every time; tessoa compares it with the previous one and keeps
+/// what the user typed, scrolled and focused, matched by node keys.
+interface pages {
+    use pages-host.{page-id};
+    use files.{file-ref};
+    use refs.{transfer-outcome};
+
+    /// One page, flattened: every node names its parent by position in
+    /// `nodes`. The first node is the root and the only node without a
+    /// parent; a parent always comes before its children, and children
+    /// appear in their order on screen. At most 4096 nodes and 1 MiB.
+    record tree {
+        /// The tab title. None keeps the title from the manifest or from
+        /// `pages-host.set-title`.
+        title: option<string>,
+        /// Keys the page handles while it has the focus and no text field is
+        /// focused. A key is written the way it types: a character such as
+        /// `8`, `+` or `a` (`A` with Shift), or one of the names `Enter`,
+        /// `Escape`, `Backspace`, `Delete`, `Tab`, `Space`, `ArrowUp`,
+        /// `ArrowDown`, `ArrowLeft`, `ArrowRight`, `Home`, `End`, `PageUp`,
+        /// `PageDown` and `F1` to `F12`. `Ctrl+`, `Alt+` and `Meta+` in front
+        /// add a modifier, for example `Ctrl+z`; `Shift+` does so in front of
+        /// a name only, for example `Shift+Tab`. Every other key works as it
+        /// does elsewhere in tessoa, and so do Ctrl+Shift combinations and
+        /// Ctrl+Tab, which a page cannot take.
+        keys: list<string>,
+        /// Bytes the host keeps for the page and hands back to `open` when
+        /// tessoa restarts or the page is reloaded. At most 16 KiB; more is
+        /// dropped and logged.
+        state: option<list<u8>>,
+        nodes: list<node>,
+    }
+
+    record node {
+        /// Position of the parent in `tree.nodes`; none for the root.
+        parent: option<u32>,
+        /// Names the node in events and keeps its state across renders.
+        /// Unique within the page. Nodes that the user interacts with need
+        /// one; items of a list should have one.
+        key: option<string>,
+        kind: node-kind,
+        layout: layout,
+        /// A small menu: right-clicking the node opens it, and so does a
+        /// left click on a button that has no other use. The choice arrives
+        /// as a `menu` event.
+        menu: list<menu-item>,
+    }
+
+    record menu-item {
+        id: string,
+        label: string,
+        disabled: bool,
+        /// Drawn in the warning colour, for destructive choices.
+        danger: bool,
+        /// A separator line follows this item.
+        separator-after: bool,
+    }
+
+    /// How a node takes space inside its parent and arranges its children.
+    record layout {
+        /// Take the space the parent has left along its direction.
+        grow: bool,
+        w: size-hint,
+        h: size-hint,
+        /// Space inside the node, around its children.
+        pad: space,
+        /// Space between the children.
+        gap: space,
+        /// Placement of the children across the parent's direction.
+        align: align,
+        /// Placement of the children along the parent's direction.
+        justify: justify,
+        /// Children that do not fit continue on the next line.
+        wrap: bool,
+        /// The node scrolls when its children do not fit.
+        scroll: bool,
+    }
+
+    variant size-hint {
+        /// As large as the content.
+        auto,
+        /// As large as the parent allows.
+        fill,
+        /// A fixed size in units of the current font size.
+        em(f32),
+    }
+
+    enum space { none, xs, s, m, l }
+
+    enum align { start, center, end, stretch }
+
+    enum justify { start, center, end, between }
+
+    enum text-size { caption, body, title, display }
+
+    enum text-align { start, center, end }
+
+    enum tone {
+        normal,
+        dim,
+        accent,
+        danger,
+        success,
+    }
+
+    enum button-kind {
+        normal,
+        primary,
+        danger,
+        /// No frame until hovered.
+        quiet,
+    }
+
+    /// What a drop zone takes.
+    enum accepts {
+        /// Files dragged from tessoa or from other programs.
+        files,
+        /// Draggable nodes of the same page.
+        items,
+        both,
+    }
+
+    variant node-kind {
+        /// Children top to bottom.
+        column,
+        /// Children left to right.
+        row,
+        /// A column with a frame and a background.
+        card,
+        /// A thin line across the parent.
+        divider,
+        /// Empty space; with `grow`, pushes its siblings apart.
+        spacer,
+        text(text-props),
+        /// Sends `click` with the node's key.
+        button(button-props),
+        /// A button that shows only its icon; the label becomes its tooltip.
+        icon-button(button-props),
+        /// Sends `input` on every change and `submit` on Enter, or Ctrl+Enter
+        /// when it has several lines.
+        text-input(input-props),
+        /// Sends `toggle` with the new state.
+        checkbox(check-props),
+        /// One file, drawn by tessoa: icon, name, size, a dimmed look when
+        /// the file is gone. Double click opens it, it can be dragged out,
+        /// and its context menu is tessoa's file menu.
+        file-row(file-row-props),
+        /// Its children are a target for dragged files or items; a drop sends
+        /// `drop` with the zone's key.
+        drop-zone(drop-props),
+        /// Its children can be dragged onto drop zones of the same page.
+        draggable(drag-props),
+    }
+
+    record text-props {
+        text: string,
+        size: text-size,
+        tone: tone,
+        /// Break lines to fit the width instead of cutting the text off.
+        wrap: bool,
+        align: text-align,
+    }
+
+    record button-props {
+        label: string,
+        kind: button-kind,
+        /// A name from tessoa's icon set.
+        icon: option<string>,
+        disabled: bool,
+    }
+
+    record input-props {
+        value: string,
+        placeholder: string,
+        disabled: bool,
+        /// Several lines: Enter starts a new line, Ctrl+Enter submits.
+        multiline: bool,
+    }
+
+    record check-props {
+        checked: bool,
+        label: string,
+    }
+
+    record file-row-props {
+        file: file-ref,
+        selected: bool,
+        /// The row can be dragged out as a file.
+        draggable: bool,
+    }
+
+    record drop-props {
+        accepts: accepts,
+        /// Shown in the zone while nothing is dragged over it.
+        hint: option<string>,
+    }
+
+    record drag-props {
+        /// Delivered to the drop zone's `drop` event.
+        payload: string,
+    }
+
+    record key-press {
+        /// The key, written as the page declared it.
+        key: string,
+        ctrl: bool,
+        shift: bool,
+        alt: bool,
+        /// The Command key on macOS, the Windows key on Windows.
+        meta: bool,
+    }
+
+    variant drop-payload {
+        /// Files, already turned into references for this plugin.
+        files(list<file-ref>),
+        /// A draggable node of the page: its payload, and the key of the
+        /// sibling it was dropped before, if any.
+        item(tuple<string, option<string>>),
+    }
+
+    variant page-event {
+        /// A button was pressed. Carries the node key.
+        click(string),
+        /// Enter in a text field. Carries the node key.
+        submit(string),
+        /// The text of a field changed. Carries the node key and the new text.
+        input(tuple<string, string>),
+        /// A checkbox changed. Carries the node key and the new state.
+        toggle(tuple<string, bool>),
+        /// A declared key was pressed.
+        key(key-press),
+        /// Something was dropped on a drop zone. Carries the zone's key.
+        drop(tuple<string, drop-payload>),
+        /// A copy, move or delete the page started has ended. Carries the
+        /// transfer id and one outcome per file, in order.
+        transfer-done(tuple<u64, list<transfer-outcome>>),
+        /// The user answered `pages-host.ask`. Carries the dialog id and
+        /// true for the ok button.
+        dialog(tuple<u64, bool>),
+        /// A menu item was chosen. Carries the node key and the item id.
+        menu(tuple<string, string>),
+        /// The page's tab became the visible one (true) or stopped being it.
+        activated(bool),
+    }
+
+    /// A page opens: newly, when tessoa restores it after a restart, or when
+    /// it is reloaded after the plugin stopped. `state` is what the last
+    /// render returned; `args` are what `pages-host.open` passed. An error
+    /// is shown in place of the page.
+    open: func(page: page-id, kind: string, state: option<list<u8>>, args: option<list<u8>>) -> result<_, string>;
+
+    /// Something happened on the page. An error goes to the plugin log; the
+    /// page stays open.
+    event: func(page: page-id, ev: page-event) -> result<_, string>;
+
+    /// Describe the page. Called after `open` and after calls that
+    /// invalidated the page. An error, or a tree that breaks the rules of
+    /// `tree`, closes the page and shows the message in its place.
+    render: func(page: page-id) -> result<tree, string>;
+
+    /// The page closed. Its id is not used again for this plugin.
+    close: func(page: page-id);
+}
+
 /// World for plugins compiled to a component directly, for example from Rust.
 world tessoa-plugin {
     import log;
     import ui;
     import files;
+    import refs;
+    import storage;
+    import clipboard;
     export plugin;
+}
+
+/// World for plugins with pages: everything in `tessoa-plugin`, plus pages.
+world tessoa-plugin-pages {
+    include tessoa-plugin;
+    import pages-host;
+    export pages;
 }
 
 /// Used by the JavaScript engine component only. Plugin authors never see it.
@@ -131,9 +558,6 @@ interface script-source {
 
 /// World for the JavaScript engine component.
 world tessoa-js-engine {
-    import log;
-    import ui;
-    import files;
+    include tessoa-plugin-pages;
     import script-source;
-    export plugin;
 }

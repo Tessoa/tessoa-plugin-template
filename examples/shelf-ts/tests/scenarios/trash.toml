@@ -1,0 +1,32 @@
+name = "Files moved to the recycle bin leave the shelf"
+
+[[files]]
+from = "text/three-lines.txt"
+as = "a.txt"
+
+[[files]]
+from = "text/empty.txt"
+as = "b.txt"
+
+[[steps]]
+open-page = "shelf"
+
+[[steps]]
+drop-files = { onto = "zone", files = ["a.txt", "b.txt"] }
+
+[[steps]]
+key = "Ctrl+a"
+
+# tessoa asks the user to confirm, then moves the files to the recycle bin.
+[[steps]]
+click = "trash"
+expect-transfer = { kind = "trash", files = ["a.txt", "b.txt"] }
+expect-text = { key = "status", text = "Moving 2 files to the trash." }
+
+# The user confirmed; one file could not be moved.
+[[steps]]
+pick = ["done", "skipped: in use"]
+expect-text = [{ key = "status", text = "Moved 1 file to the trash." }, { key = "all", text = "1 file, 1 checked" }]
+expect-children = { key = "zone", keys = ["row-2"] }
+expect-storage = { key = "files", json = [2] }
+expect-title = "Shelf (1)"

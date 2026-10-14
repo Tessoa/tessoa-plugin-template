@@ -51,6 +51,21 @@ Requires the `files.rename-selected` permission.
 
 Permission: `files.rename-selected`.
 
+### keep
+
+```
+wit  keep: func(handle: handle) -> result<file-ref, error>
+rust tessoa_plugin_sdk::files::keep(handle: Handle) -> Result<FileRef, Error>
+ts   tessoa.files.keep(handle: Handle): FileRef
+```
+
+Turn a selected file into a reference that stays valid after the
+command returns, and after tessoa restarts. The host follows the file
+when tessoa moves or renames it.
+Requires the `files.keep` permission.
+
+Permission: `files.keep`.
+
 ## Types
 
 ### handle
@@ -60,6 +75,14 @@ Permission: `files.rename-selected`.
 Identifies one selected file for the duration of the current command.
 Handles are issued by the host when the command starts and are invalid
 after it returns.
+
+### file-ref
+
+`file-ref` is `u64` (Rust `u64`, TypeScript `number`).
+
+Identifies a file the host keeps for the plugin, across commands and
+across restarts. References come from the user: a file kept with
+`keep`, or a file dropped on a page. The plugin sees the number only.
 
 ### file-info
 
@@ -79,9 +102,9 @@ Variant; Rust `Error`, TypeScript `FilesError` (thrown) with `kind: ErrorKind`.
 
 | Case | Payload | Meaning |
 |---|---|---|
-| `not-granted` | `string` | The handle was not issued for this command. |
+| `not-granted` | `string` | The handle or reference was not issued to this plugin, or is no longer valid. |
 | `permission-denied` | `string` | The manifest does not declare the permission this call needs. |
-| `io` | `string` | The file system reported an error. |
+| `io` | `string` | The file system or the host reported an error. |
 
 ### rename-request
 

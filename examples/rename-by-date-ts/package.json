@@ -4,7 +4,7 @@
   "description": "Example plugin: rename the selected photos after their capture date",
   "private": true,
   "scripts": {
-    "build": "tsc --noEmit && esbuild src/plugin.ts --bundle --format=iife --global-name=plugin --target=es2020 --outfile=dist/plugin.js"
+    "build": "tsc --noEmit && esbuild ./src/plugin --bundle --format=iife --global-name=plugin --target=es2020 --jsx=automatic --jsx-import-source=@tessoa/plugin-sdk --outfile=dist/plugin.js"
   },
   "devDependencies": {
     "@tessoa/plugin-sdk": "file:../../sdk/ts",

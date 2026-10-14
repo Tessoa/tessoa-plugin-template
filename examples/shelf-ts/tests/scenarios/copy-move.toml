@@ -1,0 +1,51 @@
+name = "Copy and move are done by tessoa, and the outcome comes back"
+
+[[files]]
+from = "text/three-lines.txt"
+as = "a.txt"
+
+[[files]]
+from = "text/empty.txt"
+as = "b.txt"
+
+[[steps]]
+open-page = "shelf"
+
+[[steps]]
+drop-files = { onto = "zone", files = ["a.txt", "b.txt"] }
+
+[[steps]]
+toggle = "check-1"
+expect-text = { key = "all", text = "2 files, 1 checked" }
+expect-tree-contains = [{ key = "file-1", selected = true }, { key = "copy", disabled = false }]
+
+# The plugin asks tessoa to copy; tessoa shows a folder picker.
+[[steps]]
+click = "copy"
+expect-transfer = { kind = "copy", files = ["a.txt"] }
+expect-text = { key = "status", text = "Pick a folder for 1 file." }
+
+# The user picks a folder.
+[[steps]]
+pick = "ok"
+expect-text = { key = "status", text = "Copied 1 file." }
+
+[[steps]]
+toggle = "check-2"
+
+[[steps]]
+click = "move"
+expect-transfer = { kind = "move", files = ["a.txt", "b.txt"] }
+
+# One outcome per file: the second could not be moved.
+[[steps]]
+pick = ["done", "failed: in use"]
+expect-text = { key = "status", text = "Moved 1 file. 1 failed: in use." }
+
+# Moved files stay on the shelf.
+[[steps]]
+click = "copy"
+
+[[steps]]
+pick = "cancel"
+expect-text = [{ key = "status", text = "Cancelled." }, { key = "all", text = "2 files, 2 checked" }]

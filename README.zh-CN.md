@@ -2,7 +2,8 @@
 
 [English](README.md)
 
-用 TypeScript 或 Rust 写 tessoa 插件的起点。插件往 tessoa 的右键菜单里加命令，运行在沙箱里：
+用 TypeScript 或 Rust 写 tessoa 插件的起点。插件往 tessoa 的右键菜单里加命令，也可以做「页」：
+一整个标签页，比如计算器、任务看板，由 tessoa 用自己的风格画出来。插件运行在沙箱里：
 它能看到用户选中的文件，但看不到路径，对文件的任何改动都只能请 tessoa 去做。
 
 模板的布局让编程助手只凭一句话的需求就能做完整件事：`AGENTS.md` 把它引到 `sdk/` 里的说明书，

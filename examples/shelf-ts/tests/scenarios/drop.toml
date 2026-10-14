@@ -1,0 +1,41 @@
+name = "Dropped files become rows; a file dropped twice stays one row"
+
+# The folder the user drags the files from.
+[[files]]
+from = "text/three-lines.txt"
+as = "a.txt"
+
+[[files]]
+from = "text/empty.txt"
+as = "b.txt"
+
+[[files]]
+from = "text/no-final-newline.txt"
+as = "c.txt"
+
+[[steps]]
+open-page = "shelf"
+expect-title = "Shelf"
+expect-text = { key = "all", text = "Nothing on the shelf" }
+expect-tree-contains = [
+  { key = "copy", disabled = true },
+  { key = "trash", disabled = true },
+  { kind = "file-row", count = 0 },
+]
+
+# File references are numbered in the order the files arrive: a.txt is 1.
+[[steps]]
+drop-files = { onto = "zone", files = ["a.txt", "b.txt"] }
+expect-text = { key = "status", text = "Added 2 files." }
+expect-children = { key = "zone", keys = ["row-1", "row-2"] }
+
+[[steps]]
+drop-files = { onto = "zone", files = ["b.txt", "c.txt"] }
+expect-text = [{ key = "status", text = "Added 1 file." }, { key = "all", text = "3 files" }]
+expect-children = { key = "zone", keys = ["row-1", "row-2", "row-3"] }
+expect-tree-contains = [
+  { kind = "file-row", count = 3 },
+  { key = "file-3", file = "c.txt" },
+]
+expect-title = "Shelf (3)"
+expect-storage = { key = "files", json = [1, 2, 3] }

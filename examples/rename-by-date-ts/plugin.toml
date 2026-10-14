@@ -2,7 +2,7 @@
 id = "com.example.rename-by-date-ts"
 name = "Rename by capture date"
 version = "0.1.0"
-api = "tessoa:plugin@0.1.0"
+api = "tessoa:plugin@0.2.0"
 
 [entry]
 kind = "js"

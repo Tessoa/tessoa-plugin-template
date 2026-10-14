@@ -1,0 +1,45 @@
+name = "Ctrl+a checks every file, Escape none, Delete takes the checked ones off"
+
+[[files]]
+from = "text/three-lines.txt"
+as = "a.txt"
+
+[[files]]
+from = "text/empty.txt"
+as = "b.txt"
+
+[[files]]
+from = "text/no-final-newline.txt"
+as = "c.txt"
+
+[[steps]]
+open-page = "shelf"
+
+[[steps]]
+drop-files = { onto = "zone", files = ["a.txt", "b.txt", "c.txt"] }
+
+[[steps]]
+key = "Ctrl+a"
+expect-text = { key = "all", text = "3 files, 3 checked" }
+expect-tree-contains = { kind = "checkbox", checked = true, count = 4 }
+
+[[steps]]
+key = "Escape"
+expect-text = { key = "all", text = "3 files" }
+
+[[steps]]
+toggle = "check-2"
+
+[[steps]]
+key = "Delete"
+expect-text = [{ key = "status", text = "Took 1 file off the shelf." }, { key = "all", text = "2 files" }]
+expect-children = { key = "zone", keys = ["row-1", "row-3"] }
+
+# The checkbox above the list does what Ctrl+a does.
+[[steps]]
+toggle = "all"
+
+[[steps]]
+click = "remove"
+expect-text = [{ key = "status", text = "Took 2 files off the shelf." }, { key = "all", text = "Nothing on the shelf" }]
+expect-storage = { key = "files", json = [] }
