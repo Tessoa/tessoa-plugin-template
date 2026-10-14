@@ -62,7 +62,8 @@
 //!   [`Page::open`] when tessoa restarts. At most 16 KiB.
 //! - Layout works like a flexible box: `col` stacks its children top to
 //!   bottom, `row` left to right; children stretch across the direction
-//!   unless `align` says otherwise, and `grow` shares the remaining length.
+//!   unless `align` says otherwise, and the children that `grow` share the
+//!   remaining length equally. A page is at most 64 levels deep.
 
 use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
@@ -143,7 +144,9 @@ pub enum Event {
     /// to the plugin, ready for [`crate::refs`] and [`file_row`].
     DropFiles { zone: String, files: Vec<FileRef> },
     /// A draggable node was dropped on a drop zone: its payload, and the key
-    /// of the sibling it was dropped before, if any.
+    /// of the draggable it was dropped in front of, none at the end. Only
+    /// the zone's own children that are draggable and have a key count, and
+    /// never the one being dragged.
     DropItem {
         zone: String,
         payload: String,
@@ -156,7 +159,9 @@ pub enum Event {
     /// A copy, a move or a move to the recycle bin that this page started
     /// has ended: one outcome per file, in order.
     TransferDone { id: u64, outcomes: Vec<TransferOutcome> },
-    /// The page's tab became the visible one, or stopped being it.
+    /// The page came into view, or went out of view: as a tab, it became the
+    /// visible tab of its pane or stopped being it; in the sidebar, its
+    /// section was shown or hidden.
     Activated { visible: bool },
 }
 
@@ -290,8 +295,13 @@ pub fn btn(label: impl Into<String>) -> Node {
 }
 
 /// A button that shows only an icon from tessoa's icon set; the label is its
-/// tooltip. The names of the set are not listed yet, and a name tessoa does
-/// not know shows a placeholder, so prefer [`btn`] with a label.
+/// tooltip. The names: `plus`, `close`, `arrow-left`, `arrow-right`,
+/// `arrow-up`, `arrow-down`, `chevron-down`, `chevron-right`, `check`,
+/// `search`, `menu`, `more`, `reload`, `undo`, `copy`, `cut`, `paste`,
+/// `new-folder`, `rename`, `delete`, `play`, `note`, `sliders`, `eye`, `sun`,
+/// `gear`, `image`, `keyboard`, `monitor`, `info`, `pin`, `question`, `tag`,
+/// `filter`, `puzzle`. A name tessoa does not know shows the puzzle piece;
+/// TypeScript catches a wrong name when it builds, Rust does not.
 pub fn icon_btn(icon: impl Into<String>, label: impl Into<String>) -> Node {
     node(NodeKind::IconButton(wire::ButtonProps {
         label: label.into(),
@@ -340,7 +350,9 @@ pub fn drop_zone(accepts: Accepts, children: impl IntoIterator<Item = Node>) -> 
 }
 
 /// Content the user can drag onto drop zones of the same page that accept
-/// items. The payload arrives in [`Event::DropItem`].
+/// items. The payload arrives in [`Event::DropItem`]. Give it a key, such as
+/// the id of the item it shows: the event names the draggable an item was
+/// dropped in front of by that key, and never names one without a key.
 pub fn draggable(payload: impl Into<String>, children: impl IntoIterator<Item = Node>) -> Node {
     container(
         NodeKind::Draggable(wire::DragProps {
@@ -403,8 +415,9 @@ impl Node {
         self
     }
 
-    /// Take the length the parent has left along its direction, shared with
-    /// the other children that grow.
+    /// Take a share of the length the parent has left along its direction.
+    /// Children that grow get equal shares whatever their content, as with
+    /// CSS `flex: 1 1 0`, but none gets less than its content needs.
     pub fn grow(mut self) -> Self {
         self.layout.grow = true;
         self
@@ -515,7 +528,8 @@ impl Node {
         self
     }
 
-    /// Buttons only: an icon from tessoa's icon set next to the label.
+    /// Buttons only: an icon from tessoa's icon set next to the label. The
+    /// names are listed at [`icon_btn`].
     pub fn icon(mut self, icon: impl Into<String>) -> Self {
         match &mut self.kind {
             NodeKind::Button(b) | NodeKind::IconButton(b) => b.icon = Some(icon.into()),

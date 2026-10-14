@@ -2,11 +2,12 @@
 
 # pages
 
-What a plugin with pages exports. A page is a whole tab: the plugin
-describes its content as a tree of nodes, tessoa draws it with its own
-widgets, and tells the plugin what the user did. The description is the
-whole page every time; tessoa compares it with the previous one and keeps
-what the user typed, scrolled and focused, matched by node keys.
+What a plugin with pages exports. A page is a whole tab, or a section of
+the sidebar: the plugin describes its content as a tree of nodes, tessoa
+draws it with its own widgets, and tells the plugin what the user did.
+The description is the whole page every time; tessoa compares it with
+the previous one and keeps what the user typed, scrolled and focused,
+matched by node keys.
 
 A plugin with pages exports this interface: it is built for the world `tessoa-plugin-pages`. The runner calls these functions; the plugin never calls them itself. In Rust, turn on the SDK's `pages` feature, implement `tessoa_plugin_sdk::pages::Page` for each kind of page and pass the types to `tessoa_plugin_sdk::export_pages!`. In TypeScript, call `tessoa.pages.define(kind, page)` for each kind when the script loads; `render` returns JSX. Every script plugin exports this interface; a script without pages answers that it has none.
 
@@ -136,7 +137,7 @@ How a node takes space inside its parent and arranges its children.
 
 | Field | Type | Meaning |
 |---|---|---|
-| `grow` | `bool` | Take the space the parent has left along its direction. |
+| `grow` | `bool` | Take a share of the length the parent has left along its direction. Children that grow get equal shares whatever their content, as with CSS `flex: 1 1 0`, but none gets less than its content needs. |
 | `w` | `size-hint` |  |
 | `h` | `size-hint` |  |
 | `pad` | `space` | Space inside the node, around its children. |
@@ -222,7 +223,7 @@ Record; Rust `ButtonProps`, TypeScript `ButtonProps`.
 |---|---|---|
 | `label` | `string` |  |
 | `kind` | `button-kind` |  |
-| `icon` | `option<string>` | A name from tessoa's icon set. This version of the interface does not list the names yet; a name tessoa does not know shows a placeholder. |
+| `icon` | `option<string>` | A name from tessoa's icon set, drawn in the user's theme. Names: `plus`, `close`, `arrow-left`, `arrow-right`, `arrow-up`, `arrow-down`, `chevron-down`, `chevron-right`, `check`, `search`, `menu`, `more`, `reload`, `undo`, `copy`, `cut`, `paste`, `new-folder`, `rename`, `delete`, `play`, `note`, `sliders`, `eye`, `sun`, `gear`, `image`, `keyboard`, `monitor`, `info`, `pin`, `question`, `tag`, `filter`, `puzzle`. Later versions only add names. A name tessoa does not know shows the puzzle piece. |
 | `disabled` | `bool` |  |
 
 ### input-props
@@ -290,7 +291,7 @@ Variant; Rust `NodeKind`, TypeScript `NodeKind`.
 | `checkbox` | `check-props` | Sends `toggle` with the new state. |
 | `file-row` | `file-row-props` | One file, drawn by tessoa: icon, name, size, a dimmed look when the file is gone. Double click opens it, it can be dragged out, and its context menu is tessoa's file menu. |
 | `drop-zone` | `drop-props` | Its children are a target for dragged files or items; a drop sends `drop` with the zone's key. |
-| `draggable` | `drag-props` | Its children can be dragged onto drop zones of the same page. |
+| `draggable` | `drag-props` | Its children can be dragged onto drop zones of the same page. Give it a key, such as the id of the item it shows: a drop names the draggable it landed in front of by that key, and never names one without a key. |
 
 ### node
 
@@ -311,11 +312,12 @@ Record; Rust `Tree`, TypeScript `Tree`.
 One page, flattened: every node names its parent by position in
 `nodes`. The first node is the root and the only node without a
 parent; a parent always comes before its children, and children
-appear in their order on screen. At most 4096 nodes and 1 MiB.
+appear in their order on screen. At most 4096 nodes, at most 64
+levels deep (the root is level 0, its children level 1), and 1 MiB.
 
 | Field | Type | Meaning |
 |---|---|---|
-| `title` | `option<string>` | The tab title. None keeps the title from the manifest or from `pages-host.set-title`. |
+| `title` | `option<string>` | The title on the page's tab or sidebar section. None keeps the title from the manifest or from `pages-host.set-title`. |
 | `keys` | `list<string>` | Keys the page handles while it has the focus and no text field is focused. A key is written the way it types: a character such as `8`, `+` or `a` (`A` with Shift), or one of the names `Enter`, `Escape`, `Backspace`, `Delete`, `Tab`, `Space`, `ArrowUp`, `ArrowDown`, `ArrowLeft`, `ArrowRight`, `Home`, `End`, `PageUp`, `PageDown` and `F1` to `F12`. `Ctrl+`, `Alt+` and `Meta+` in front add a modifier, for example `Ctrl+z`; `Shift+` does so in front of a name only, for example `Shift+Tab`. Every other key works as it does elsewhere in tessoa, and so do Ctrl+Shift combinations and Ctrl+Tab, which a page cannot take. |
 | `state` | `option<list<u8>>` | Bytes the host keeps for the page and hands back to `open` when tessoa restarts or the page is reloaded. At most 16 KiB; more is dropped and logged. |
 | `nodes` | `list<node>` |  |
@@ -339,7 +341,7 @@ Variant; Rust `DropPayload`, TypeScript `DropPayload`.
 | Case | Payload | Meaning |
 |---|---|---|
 | `files` | `list<file-ref>` | Files, already turned into references for this plugin. |
-| `item` | `tuple<string, option<string>>` | A draggable node of the page: its payload, and the key of the sibling it was dropped before, if any. |
+| `item` | `tuple<string, option<string>>` | A draggable node of the page: its payload, and the key of the draggable it was dropped in front of, none at the end. Only the zone's own children that are draggable and have a key count, and never the one being dragged. |
 
 ### page-event
 
@@ -356,4 +358,4 @@ Variant; Rust `PageEvent`, TypeScript `PageEvent`.
 | `transfer-done` | `tuple<u64, list<transfer-outcome>>` | A copy, move or delete the page started has ended. Carries the transfer id and one outcome per file, in order. |
 | `dialog` | `tuple<u64, bool>` | The user answered `pages-host.ask`. Carries the dialog id and true for the ok button. |
 | `menu` | `tuple<string, string>` | A menu item was chosen. Carries the node key and the item id. |
-| `activated` | `bool` | The page's tab became the visible one (true) or stopped being it. |
+| `activated` | `bool` | The page came into view (true) or went out of view: as a tab, it became the visible tab of its pane or stopped being it; in the sidebar, its section was shown or hidden. |

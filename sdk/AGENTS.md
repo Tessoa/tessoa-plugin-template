@@ -65,6 +65,7 @@ be found or is too old, say so; do not work around it.
 | Command | Use |
 |---|---|
 | `tessoa-plugin doctor` | Check the toolchain and the project. |
+| `tessoa-plugin check` | Report what the manifest gets wrong without stopping the plugin: a theme, a page icon. |
 | `tessoa-plugin build` | Build and audit. |
 | `tessoa-plugin test` | Run the scenarios. |
 | `tessoa-plugin render [--page <id>] [--steps <scenario>]` | Print a page as text, freshly opened or after the steps of a scenario. |
@@ -93,10 +94,10 @@ given only by the user, inside tessoa.
 
 ## Pages
 
-A page is a whole tab the plugin fills; tessoa draws it with its own widgets, in
-the user's theme and language. Write a page when the user keeps something open: a
-tool, a place to collect things, a board. Write a command for an action on the
-selected files. A plugin can have both.
+A page is a whole tab, or a section of the sidebar, that the plugin fills; tessoa
+draws it with its own widgets, in the user's theme and language. Write a page when
+the user keeps something open: a tool, a place to collect things, a board. Write a
+command for an action on the selected files. A plugin can have both.
 
 - Declare each page under `[[pages]]` in `plugin.toml`. A plugin with pages only
   has no `[[commands]]`: remove the skeleton's command, its code and its scenario.
@@ -106,8 +107,8 @@ selected files. A plugin can have both.
   implement `Page`, and use `export_pages!` instead of `export!`.
 - Read `sdk/docs/guide/pages.md` before writing the page, and start from the
   closest example: `examples/calculator-ts` and `calculator-rs` (buttons, keys, the
-  clipboard), `examples/shelf-ts` (files), `examples/kanban-ts` (cards to drag, a
-  menu, a question before deleting).
+  clipboard; the TypeScript one has a theme), `examples/shelf-ts` (files),
+  `examples/kanban-ts` (cards to drag, a menu, a question before deleting).
 - `render` describes the whole page every time and changes nothing; handlers
   only change the state. After every event and every command the SDK renders
   every open page again. Do not update another page by hand.
@@ -136,8 +137,20 @@ selected files. A plugin can have both.
   shows goes in the storage (`tessoa.storage`, Rust `storage`); what one tab needs
   after a restart is what `save` returns. In TypeScript the saved state is JSON:
   save a `Set` or a `Map` as an array.
-- tessoa's icon names are not listed yet, and an unknown one shows a placeholder:
-  use buttons with text labels.
+- Icons are names from tessoa's set, listed in `sdk/docs/guide/pages.md`; copy one
+  from there. TypeScript does not build with a name outside the list; anywhere
+  else an unknown name shows a puzzle piece.
+- The children that `grow` share the space left equally, whatever their content,
+  but none gets less than its content needs.
+- A page is at most 64 levels deep; a deeper tree fails the page.
+- Give every `draggable` the item's id as its key and as its payload, as
+  `examples/kanban-ts` does: a drop names the draggable it landed in front of by
+  its key, and without keys every item lands at the end.
+- `where = ["sidebar"]` in `[[pages]]` opens the page in the sidebar instead of
+  a tab; the first place listed decides.
+- Colours: a page shows tessoa's colours unless `plugin.toml` has a `[theme]`
+  (see `sdk/docs/guide/pages.md`, Colours). If you write one, run
+  `tessoa-plugin check` and fix every `problem:` line it prints.
 - Test the page with page scenarios (`[[steps]]` in `tests/scenarios`; see
   `sdk/docs/guide/testing.md`): open the page, click, type, drop, answer, restart,
   and check the page after each step. Cover every flow the user can take, a restart

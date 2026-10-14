@@ -1,18 +1,18 @@
 # Pages
 
-A page is a whole tab that a plugin fills: a calculator, a shelf of files, a
-task board. The plugin describes what the page shows as a tree of nodes;
-tessoa draws it with its own widgets, in the user's theme, component style,
-language and scale, and tells the plugin what the user did. The plugin never
-draws, never sees pixels or fonts, and needs no permission for the page
-itself.
+A page is a whole tab, or a section of the sidebar, that a plugin fills: a
+calculator, a shelf of files, a task board. The plugin describes what the
+page shows as a tree of nodes; tessoa draws it with its own widgets, in the
+user's theme, component style, language and scale, and tells the plugin what
+the user did. The plugin never draws, never sees pixels or fonts, and needs
+no permission for the page itself.
 
 Complete pages to copy from, each with page scenarios in its
 `tests/scenarios`:
 
 | Example | Shows |
 |---|---|
-| `examples/calculator-ts`, `examples/calculator-rs` | The same page in both languages: buttons, declared keys, the clipboard, state that survives a restart. |
+| `examples/calculator-ts`, `examples/calculator-rs` | The same page in both languages: buttons, declared keys, the clipboard, state that survives a restart. The TypeScript one also has its own colours, `[theme]` in its `plugin.toml`. |
 | `examples/shelf-ts` | Files: a drop zone, file rows, copy, move and trash done by tessoa, a command that opens the page. |
 | `examples/kanban-ts` | A board: draggable cards, a card menu, a field of several lines, a question before deleting, data shared by every page. |
 
@@ -21,7 +21,7 @@ Complete pages to copy from, each with page scenarios in its
 | | Command | Page |
 |---|---|---|
 | The user | selects files and picks the command from the context menu | opens the page from tessoa's menus (a right click on the tab bar, or on an empty spot of a folder), or a command opens it |
-| It runs | once, on those files, then ends | as long as its tab is open |
+| It runs | once, on those files, then ends | as long as the page is open |
 | Good for | renaming, counting, converting, tagging | a tool, a place to collect things, a board |
 
 A plugin can have both. The shelf has a command, "Add to the shelf", that
@@ -83,10 +83,11 @@ puts the selected files on the shelf and shows it.
     that fails (TypeScript throws a `StorageError`, Rust returns an `Err`).
 11. **tessoa chooses the look.** A page names sizes (`caption`, `body`,
     `title`, `display`), tones (`dim`, `accent`, `danger`, `success`),
-    spacing (`xs` to `l`) and button kinds; it cannot pick colours, fonts or
-    pixel sizes, and there is no `style` or `className`. `tessoa.ui.language()`
-    (Rust `ui::language()`) returns the language code for the plugin's own
-    texts.
+    spacing (`xs` to `l`) and button kinds; it cannot give a node its own
+    colour, font or pixel size, and there is no `style` or `className`. The
+    plugin may give all its pages a palette in `plugin.toml`; see
+    [Colours](#colours). `tessoa.ui.language()` (Rust `ui::language()`)
+    returns the language code for the plugin's own texts.
 
 A render that fails, or a tree that breaks the rules below, shows an error in
 place of the page. An event that fails goes to the plugin log; the page stays.
@@ -109,7 +110,7 @@ user can reload them.
 | checkbox | `<checkbox checked={c}>Done</checkbox>` | `checkbox(c, "Done")` | Shows `checked` as the page gives it: update it from `onToggle`. |
 | file-row | `<file-row file={ref} />` | `file_row(r)` | One file, drawn by tessoa: icon, name, size, dimmed when gone. Double click opens it; the user can drag it out; its context menu is tessoa's file menu. `selected`, `draggable` (default true). |
 | drop-zone | `<drop-zone accepts="files">` | `drop_zone(Accepts::Files, [...])` | Takes `files`, `items` or `both`; `hint` shows while nothing is dragged over it. |
-| draggable | `<draggable payload="c1">` | `draggable("c1", [...])` | Its children can be dragged onto a drop zone that takes items. |
+| draggable | `<draggable key="c1" payload="c1">` | `draggable("c1", [...]).key("c1")` | Its children can be dragged onto a drop zone that takes items. Give it a key; see [Dragging items](#dragging-items). |
 
 Every node takes `key`, `grow`, `w`, `h`, `pad`, `gap`, `justify`, `scroll` and
 `menu`; a container also takes `align` (across its direction; default
@@ -121,8 +122,11 @@ a method that does not apply to the node, such as `.size()` on a button, is
 ignored and logged once. Only the attributes in the SDK's declarations exist.
 
 Layout works like a flexible box: children stretch across the direction of
-their parent unless `align` says otherwise, and `grow` shares the length that
-is left along it. `w` and `h` are `"auto"` (as large as the content), `"fill"`
+their parent unless `align` says otherwise. The children that `grow` share
+the length that is left along it in equal parts, whatever their content, as
+with CSS `flex: 1 1 0`; none is made shorter than its content needs. Three
+buttons that grow in a row are equally wide, whether their labels are
+"0" or "Copy". `w` and `h` are `"auto"` (as large as the content), `"fill"`
 (as large as the parent allows) or a number of em.
 
 A small menu: any node can have `menu={[{ id: "rename", label: "Rename" }, { id:
@@ -134,13 +138,48 @@ no `onClick`. Choosing an item calls `onMenu(id)` (Rust: `Event::Menu { key,
 item }`). Give the node a key, and the items ids that are unique within the
 menu.
 
-The names of tessoa's icon set (`icon` on buttons) are not listed in this
-version of the kit; a name tessoa does not know shows a placeholder. Prefer
-a button with a text label.
+Icons: `icon` on a button or an icon button, and `icon` of a page in
+`plugin.toml`, take a name from tessoa's icon set, drawn in the user's theme.
+The names: `plus`, `close`, `arrow-left`, `arrow-right`, `arrow-up`,
+`arrow-down`, `chevron-down`, `chevron-right`, `check`, `search`, `menu`,
+`more`, `reload`, `undo`, `copy`, `cut`, `paste`, `new-folder`, `rename`,
+`delete`, `play`, `note`, `sliders`, `eye`, `sun`, `gear`, `image`,
+`keyboard`, `monitor`, `info`, `pin`, `question`, `tag`, `filter`, `puzzle`.
+Later versions only add names. A name tessoa does not know shows the puzzle
+piece: in TypeScript it does not build (the attribute's type is
+`tessoa.pages.IconName`), in `plugin.toml` `tessoa-plugin check` reports it,
+in Rust nothing catches it, so copy the name from this list.
 
-Limits: 4096 nodes and 1 MiB per tree; at most 20 renders a second per page,
-more are merged. A TypeScript page handles every node in every render: a few
-hundred nodes take a few milliseconds, thousands are slow.
+Limits: 4096 nodes, 64 levels below the root (the root is level 0, its
+children level 1) and 1 MiB per tree; a tree beyond any of them fails the
+page. At most 20 renders a second per page, more are merged. A TypeScript
+page handles every node in every render: a few hundred nodes take a few
+milliseconds, thousands are slow.
+
+## Dragging items
+
+To let the user reorder items or move them between lists, put each item in a
+`draggable` inside a `drop-zone` that takes `items`, and give every draggable
+the item's id as its key and as its payload.
+
+```tsx
+<drop-zone key={`list-${list.id}`} accepts="items" onDropItem={(id, before) => move(id, list.id, before)}>
+  {list.cards.map((c) => (
+    <draggable key={c.id} payload={c.id}>
+      <text>{c.title}</text>
+    </draggable>
+  ))}
+</drop-zone>
+```
+
+`onDropItem(payload, before)` (Rust: `Event::DropItem { zone, payload,
+before }`) receives the payload of the item that was dropped and the key of
+the draggable it was dropped in front of, `undefined` (Rust `None`) at the
+end. Only the zone's own children that are draggable and have a key count,
+and never the one being dragged: a heading at the top of the zone is not
+named, and a draggable without a key is never named, so without keys every
+item lands at the end. Take the item out of its old place first, then insert
+it in front of `before`, as `examples/kanban-ts` does.
 
 ## Keys
 
@@ -160,6 +199,74 @@ depend on the state: in TypeScript `keys` can be a function of it.
 keys: ["0", "1", "+", "Enter", "Backspace", "Escape", "Ctrl+c", "Meta+c"],
 onKey: (c, k) => press(c, k.key),
 ```
+
+## Where a page opens
+
+`where` in the page's `[[pages]]` entry says where the page goes when the user
+opens it from tessoa's menus or from the settings, and when the plugin opens
+it with `pagesHost.open`: `"tab"`, a new tab in the focused pane (the
+default), or `"sidebar"`, a new section at the bottom of the sidebar. The
+first place in the list decides. Pick `sidebar` for something the user keeps
+beside the files, such as a shelf or a small tool; pick `tab` for a page that
+needs room, such as a board. Either way the user can drag an open page from
+the tabs to the sidebar and back. A `single` page that is already open in the
+window comes to the front instead, wherever it is.
+
+```toml
+[[pages]]
+id = "shelf"
+title = "Shelf"
+single = true
+where = ["sidebar"]
+```
+
+## Colours
+
+A page shows tessoa's colours unless the plugin gives its pages a theme in
+`plugin.toml`: one palette for tessoa's light themes, one for its dark
+themes, or only one, which is then used with every theme.
+
+```toml
+[theme.light]
+background = "#ffffff"
+text = "#1f1d2b"
+accent = "#5b3fd6"
+
+[theme.dark]
+background = "#1e1b2e"
+text = "#ece8ff"
+accent = "#b18cff"
+surface = "#2a2640"
+```
+
+| Key | Colours | |
+|---|---|---|
+| `background` | behind the whole page | required |
+| `text` | text | required |
+| `accent` | primary buttons, accent text (the `accent` and `success` tones), the selection, the focus frame | required |
+| `surface` | cards, text fields, small menus | optional |
+| `border` | frames and dividers | optional |
+| `text-dim` | dim text (the `dim` tone), placeholders | optional |
+| `danger` | danger buttons, danger menu items, danger text (the `danger` tone) | optional |
+
+Colours are written `"#rrggbb"`. tessoa derives an optional colour that is
+left out from the three required ones. A theme with a required key missing
+or a colour written any other way is not used at all, and the pages show
+tessoa's colours; a key that is not in the table is ignored. Both are
+reported by `tessoa-plugin check`, by every command that builds, and in the
+plugin log.
+
+The theme colours the content of the pages only. The tab bar and the sidebar
+around a page stay tessoa's, and so do the shapes, corners and shadows of the
+component style the user chose. The plugin's colours are the default; the
+user can switch a plugin's pages to tessoa's colours in Settings › System ›
+Extensions.
+
+Keep the colours readable: text needs a contrast of at least 4.5:1 against
+the background and against the surface, and the accent at least 3:1 against
+the background, so that accent text, the selection and the focus frame show.
+`[theme.light]` needs a background lighter than its text, `[theme.dark]` one
+darker. `tessoa-plugin check` reports a palette that misses any of these.
 
 ## Files
 
@@ -410,6 +517,7 @@ gives it, and `holds="..."` when it keeps what the user typed instead.
 ## The manifest
 
 Each kind of page is a `[[pages]]` entry in `plugin.toml` with an `id`, a
-`title`, optionally an `icon` and `single`; see [manifest.md](manifest.md).
-The `id` is the kind that `tessoa.pages.define("<id>", ...)` or
-`export_pages!(T => "<id>")` names. A plugin may have pages and no commands.
+`title`, optionally an `icon`, `single` and `where`; the plugin's `[theme]`
+colours all its pages. See [manifest.md](manifest.md). The `id` is the kind
+that `tessoa.pages.define("<id>", ...)` or `export_pages!(T => "<id>")`
+names. A plugin may have pages and no commands.

@@ -14,3 +14,21 @@ title = "Calculator"
 
 [permissions]
 clipboard = ["write"]
+
+# The page's own colours. tessoa uses [theme.light] with its light themes and
+# [theme.dark] with its dark ones; the user can switch them off in tessoa.
+[theme.light]
+background = "#f7f4ee"
+text = "#2b2620"
+accent = "#c2410c"
+surface = "#ffffff"
+border = "#e2dccf"
+text-dim = "#7a7064"
+
+[theme.dark]
+background = "#1f1b16"
+text = "#f2ece3"
+accent = "#fb923c"
+surface = "#2a251e"
+border = "#3a332a"
+text-dim = "#a39886"

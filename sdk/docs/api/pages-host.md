@@ -31,10 +31,12 @@ rust tessoa_plugin_sdk::pages_host::open(kind: &str, args: Option<&[u8]>) -> Res
 ts   tessoa.pagesHost.open(kind: string, args?: unknown): PageId
 ```
 
-Open a page of this plugin, declared in the manifest under `kind`.
-A page declared `single` that is already open in the window is
-focused instead, and its id returned; `args` then reach no page.
-From a command, the page opens in the window the command ran in.
+Open a page of this plugin, declared in the manifest under `kind`,
+where the first place of its `where` says: a new tab, or a new
+section of the sidebar. A page declared `single` that is already
+open in the window is focused instead, and its id returned; `args`
+then reach no page. From a command, the page opens in the window the
+command ran in.
 
 Permission: none.
 
@@ -46,7 +48,7 @@ rust tessoa_plugin_sdk::pages_host::set_title(page: PageId, title: &str)
 ts   tessoa.pagesHost.setTitle(page: PageId, title: string): void
 ```
 
-Change the title of the page's tab.
+Change the page's title, shown on its tab or its sidebar section.
 
 Permission: none.
 

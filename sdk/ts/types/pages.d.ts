@@ -1,6 +1,6 @@
 // Pages in TypeScript: `tessoa.pages.define`, the elements a page renders,
 // and their attributes. Written by hand; the enumerations (Space, Align,
-// TextSize and so on) and KeyPress are generated from
+// TextSize and so on), KeyPress and IconName are generated from
 // wit/tessoa-plugin.wit into tessoa.d.ts, in the same namespace.
 
 declare namespace tessoa.pages {
@@ -48,8 +48,9 @@ declare namespace tessoa.pages {
      */
     key?: string | number;
     /**
-     * Take the length the parent has left along its direction, shared with
-     * the other children that grow.
+     * Take a share of the length the parent has left along its direction.
+     * Children that grow get equal shares whatever their content, as with
+     * CSS `flex: 1 1 0`, but none gets less than its content needs.
      */
     grow?: boolean;
     /** The width; the default `"auto"` is as wide as the content. */
@@ -98,11 +99,8 @@ declare namespace tessoa.pages {
 
   interface ButtonAttributes extends NodeAttributes {
     kind?: ButtonKind;
-    /**
-     * A name from tessoa's icon set, shown with the label. The names are not
-     * listed yet; a name tessoa does not know shows a placeholder.
-     */
-    icon?: string;
+    /** An icon from tessoa's icon set, shown with the label. */
+    icon?: IconName;
     disabled?: boolean;
     /** A left click. Not called when the button has a `menu`, which the click opens. */
     onClick?: () => void;
@@ -111,12 +109,8 @@ declare namespace tessoa.pages {
   }
 
   interface IconButtonAttributes extends NodeAttributes {
-    /**
-     * A name from tessoa's icon set. The names are not listed yet; a name
-     * tessoa does not know shows a placeholder, so prefer a `<button>` with a
-     * label.
-     */
-    icon: string;
+    /** An icon from tessoa's icon set. */
+    icon: IconName;
     /** The tooltip. */
     label: string;
     kind?: ButtonKind;
@@ -176,12 +170,19 @@ declare namespace tessoa.pages {
     /** Files were dropped; they arrive as references issued to the plugin. */
     onDropFiles?: (files: tessoa.files.FileRef[]) => void;
     /**
-     * A draggable node was dropped: its payload, and the key of the sibling
-     * it was dropped before, undefined at the end.
+     * A draggable node was dropped: its payload, and the key of the
+     * draggable it was dropped in front of, undefined at the end. Only the
+     * zone's own children that are draggable and have a key count, and
+     * never the one being dragged.
      */
     onDropItem?: (payload: string, before: string | undefined) => void;
   }
 
+  /**
+   * Give a draggable a `key`, such as the id of the item it shows:
+   * `onDropItem` names the draggable an item was dropped in front of by that
+   * key, and never names one without a key.
+   */
   interface DraggableAttributes extends ContainerAttributes {
     /** What `onDropItem` of the drop zone receives. */
     payload: string;
@@ -251,7 +252,7 @@ declare namespace tessoa.pages {
      * logged.
      */
     save?(state: S): unknown;
-    /** The tab title; without it, the title from plugin.toml. */
+    /** The title on the page's tab or sidebar section; without it, the title from plugin.toml. */
     title?(state: S): string | undefined;
     /**
      * Keys the page handles while it has the focus and no text field is
@@ -265,7 +266,11 @@ declare namespace tessoa.pages {
      * ended: the transfer id, and one outcome per file, in order.
      */
     onTransferDone?(state: S, transfer: number, outcomes: tessoa.refs.TransferOutcome[]): void;
-    /** The page's tab became the visible one, or stopped being it. */
+    /**
+     * The page came into view, or went out of view: as a tab, it became the
+     * visible tab of its pane or stopped being it; in the sidebar, its
+     * section was shown or hidden.
+     */
     onActivated?(state: S, visible: boolean): void;
     /** The page closed. */
     close?(state: S): void;

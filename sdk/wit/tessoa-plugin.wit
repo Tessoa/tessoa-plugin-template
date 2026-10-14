@@ -1,7 +1,8 @@
 // Plugin interface for tessoa.
 //
 // Version 0.2 covers context-menu commands that work on the files the user
-// selected, and pages: whole tabs a plugin describes and tessoa draws.
+// selected, and pages: whole tabs, or sections of the sidebar, that a plugin
+// describes and tessoa draws.
 //
 // Rules that every interface here follows:
 //
@@ -248,13 +249,15 @@ interface pages-host {
     /// per page; several requests in between are one render.
     invalidate: func(page: page-id);
 
-    /// Open a page of this plugin, declared in the manifest under `kind`.
-    /// A page declared `single` that is already open in the window is
-    /// focused instead, and its id returned; `args` then reach no page.
-    /// From a command, the page opens in the window the command ran in.
+    /// Open a page of this plugin, declared in the manifest under `kind`,
+    /// where the first place of its `where` says: a new tab, or a new
+    /// section of the sidebar. A page declared `single` that is already
+    /// open in the window is focused instead, and its id returned; `args`
+    /// then reach no page. From a command, the page opens in the window the
+    /// command ran in.
     open: func(kind: string, args: option<list<u8>>) -> result<page-id, string>;
 
-    /// Change the title of the page's tab.
+    /// Change the page's title, shown on its tab or its sidebar section.
     set-title: func(page: page-id, title: string);
 
     /// Ask a yes/no question on behalf of a page. Returns at once with a
@@ -264,11 +267,12 @@ interface pages-host {
     ask: func(page: page-id, title: string, body: string, items: list<string>, ok-label: string, cancel-label: string) -> u64;
 }
 
-/// What a plugin with pages exports. A page is a whole tab: the plugin
-/// describes its content as a tree of nodes, tessoa draws it with its own
-/// widgets, and tells the plugin what the user did. The description is the
-/// whole page every time; tessoa compares it with the previous one and keeps
-/// what the user typed, scrolled and focused, matched by node keys.
+/// What a plugin with pages exports. A page is a whole tab, or a section of
+/// the sidebar: the plugin describes its content as a tree of nodes, tessoa
+/// draws it with its own widgets, and tells the plugin what the user did.
+/// The description is the whole page every time; tessoa compares it with
+/// the previous one and keeps what the user typed, scrolled and focused,
+/// matched by node keys.
 interface pages {
     use pages-host.{page-id};
     use files.{file-ref};
@@ -277,10 +281,11 @@ interface pages {
     /// One page, flattened: every node names its parent by position in
     /// `nodes`. The first node is the root and the only node without a
     /// parent; a parent always comes before its children, and children
-    /// appear in their order on screen. At most 4096 nodes and 1 MiB.
+    /// appear in their order on screen. At most 4096 nodes, at most 64
+    /// levels deep (the root is level 0, its children level 1), and 1 MiB.
     record tree {
-        /// The tab title. None keeps the title from the manifest or from
-        /// `pages-host.set-title`.
+        /// The title on the page's tab or sidebar section. None keeps the
+        /// title from the manifest or from `pages-host.set-title`.
         title: option<string>,
         /// Keys the page handles while it has the focus and no text field is
         /// focused. A key is written the way it types: a character such as
@@ -327,7 +332,10 @@ interface pages {
 
     /// How a node takes space inside its parent and arranges its children.
     record layout {
-        /// Take the space the parent has left along its direction.
+        /// Take a share of the length the parent has left along its
+        /// direction. Children that grow get equal shares whatever their
+        /// content, as with CSS `flex: 1 1 0`, but none gets less than its
+        /// content needs.
         grow: bool,
         w: size-hint,
         h: size-hint,
@@ -418,6 +426,9 @@ interface pages {
         /// `drop` with the zone's key.
         drop-zone(drop-props),
         /// Its children can be dragged onto drop zones of the same page.
+        /// Give it a key, such as the id of the item it shows: a drop names
+        /// the draggable it landed in front of by that key, and never names
+        /// one without a key.
         draggable(drag-props),
     }
 
@@ -433,9 +444,14 @@ interface pages {
     record button-props {
         label: string,
         kind: button-kind,
-        /// A name from tessoa's icon set. This version of the interface does
-        /// not list the names yet; a name tessoa does not know shows a
-        /// placeholder.
+        /// A name from tessoa's icon set, drawn in the user's theme. Names:
+        /// `plus`, `close`, `arrow-left`, `arrow-right`, `arrow-up`,
+        /// `arrow-down`, `chevron-down`, `chevron-right`, `check`, `search`,
+        /// `menu`, `more`, `reload`, `undo`, `copy`, `cut`, `paste`,
+        /// `new-folder`, `rename`, `delete`, `play`, `note`, `sliders`,
+        /// `eye`, `sun`, `gear`, `image`, `keyboard`, `monitor`, `info`,
+        /// `pin`, `question`, `tag`, `filter`, `puzzle`. Later versions only
+        /// add names. A name tessoa does not know shows the puzzle piece.
         icon: option<string>,
         disabled: bool,
     }
@@ -485,7 +501,9 @@ interface pages {
         /// Files, already turned into references for this plugin.
         files(list<file-ref>),
         /// A draggable node of the page: its payload, and the key of the
-        /// sibling it was dropped before, if any.
+        /// draggable it was dropped in front of, none at the end. Only the
+        /// zone's own children that are draggable and have a key count, and
+        /// never the one being dragged.
         item(tuple<string, option<string>>),
     }
 
@@ -510,7 +528,9 @@ interface pages {
         dialog(tuple<u64, bool>),
         /// A menu item was chosen. Carries the node key and the item id.
         menu(tuple<string, string>),
-        /// The page's tab became the visible one (true) or stopped being it.
+        /// The page came into view (true) or went out of view: as a tab, it
+        /// became the visible tab of its pane or stopped being it; in the
+        /// sidebar, its section was shown or hidden.
         activated(bool),
     }
 

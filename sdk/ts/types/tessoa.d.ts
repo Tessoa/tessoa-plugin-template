@@ -297,17 +297,19 @@ declare namespace tessoa {
     function invalidate(page: PageId): void;
 
     /**
-     * Open a page of this plugin, declared in the manifest under `kind`.
-     * A page declared `single` that is already open in the window is
-     * focused instead, and its id returned; `args` then reach no page.
-     * From a command, the page opens in the window the command ran in.
+     * Open a page of this plugin, declared in the manifest under `kind`,
+     * where the first place of its `where` says: a new tab, or a new
+     * section of the sidebar. A page declared `single` that is already
+     * open in the window is focused instead, and its id returned; `args`
+     * then reach no page. From a command, the page opens in the window the
+     * command ran in.
      * In TypeScript, `args` is any value JSON can hold; the page's `open`
      * receives it parsed. Throws an `Error` with the host's reason when the
      * page does not open.
      */
     function open(kind: string, args?: unknown): PageId;
 
-    /** Change the title of the page's tab. */
+    /** Change the page's title, shown on its tab or its sidebar section. */
     function setTitle(page: PageId, title: string): void;
 
     /**
@@ -322,9 +324,9 @@ declare namespace tessoa {
   }
 
   /**
-   * Pages: whole tabs the plugin describes and tessoa draws. A kind of page
-   * is defined with `tessoa.pages.define`; types/pages.d.ts declares it and
-   * the elements a page renders.
+   * Pages: whole tabs, or sections of the sidebar, that the plugin describes
+   * and tessoa draws. A kind of page is defined with `tessoa.pages.define`;
+   * types/pages.d.ts declares it and the elements a page renders.
    */
   namespace pages {
     type Space = "none" | "xs" | "s" | "m" | "l";
@@ -353,6 +355,48 @@ declare namespace tessoa {
       /** The Command key on macOS, the Windows key on Windows. */
       meta: boolean;
     }
+
+    /**
+     * A name from tessoa's icon set, for `icon` on a button or an icon
+     * button. tessoa draws it in the user's theme. Later versions only add
+     * names.
+     */
+    type IconName =
+      | "plus"
+      | "close"
+      | "arrow-left"
+      | "arrow-right"
+      | "arrow-up"
+      | "arrow-down"
+      | "chevron-down"
+      | "chevron-right"
+      | "check"
+      | "search"
+      | "menu"
+      | "more"
+      | "reload"
+      | "undo"
+      | "copy"
+      | "cut"
+      | "paste"
+      | "new-folder"
+      | "rename"
+      | "delete"
+      | "play"
+      | "note"
+      | "sliders"
+      | "eye"
+      | "sun"
+      | "gear"
+      | "image"
+      | "keyboard"
+      | "monitor"
+      | "info"
+      | "pin"
+      | "question"
+      | "tag"
+      | "filter"
+      | "puzzle";
   }
 }
 
