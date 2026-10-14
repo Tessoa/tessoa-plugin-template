@@ -42,7 +42,9 @@ declare namespace tessoa.pages {
      * Names the node in events and in tests, and keeps what the user typed,
      * scrolled and focused across renders. Unique within the whole page: in
      * a list use keys such as `card-12`, not the position. A node with a
-     * handler and no key gets a key from its position.
+     * handler and no key gets a key from its position, such as `#0.2`, which
+     * changes when nodes before it come and go; do not start your own keys
+     * with `#`.
      */
     key?: string | number;
     /**
@@ -64,7 +66,8 @@ declare namespace tessoa.pages {
     scroll?: boolean;
     /**
      * A small menu: right-clicking the node opens it, and so does a left
-     * click on a button.
+     * click on a button or an icon button that has one, which then does not
+     * call its `onClick`.
      */
     menu?: MenuItem[];
     /** An item of `menu` was chosen; receives its id. */
@@ -95,28 +98,40 @@ declare namespace tessoa.pages {
 
   interface ButtonAttributes extends NodeAttributes {
     kind?: ButtonKind;
-    /** A name from tessoa's icon set, shown with the label. */
+    /**
+     * A name from tessoa's icon set, shown with the label. The names are not
+     * listed yet; a name tessoa does not know shows a placeholder.
+     */
     icon?: string;
     disabled?: boolean;
+    /** A left click. Not called when the button has a `menu`, which the click opens. */
     onClick?: () => void;
     /** The label. */
     children?: Child;
   }
 
   interface IconButtonAttributes extends NodeAttributes {
-    /** A name from tessoa's icon set. */
+    /**
+     * A name from tessoa's icon set. The names are not listed yet; a name
+     * tessoa does not know shows a placeholder, so prefer a `<button>` with a
+     * label.
+     */
     icon: string;
     /** The tooltip. */
     label: string;
     kind?: ButtonKind;
     disabled?: boolean;
+    /** A left click. Not called when the button has a `menu`, which the click opens. */
     onClick?: () => void;
   }
 
   interface TextInputAttributes extends NodeAttributes {
     /**
      * The text the page gives the field. The field keeps what the user typed
-     * until a render gives it a different value.
+     * until a render gives it a different value than the render before. To
+     * empty the field after a submit, keep its text in the state from
+     * `onInput` and set that to "": a page that always gives `value=""`
+     * cannot empty it.
      */
     value: string;
     /** Grey text shown while the field is empty. */
@@ -222,16 +237,18 @@ declare namespace tessoa.pages {
    * builds and the handlers change in place.
    */
   interface PageDefinition<S> {
-    /** Build the state of a page that opens. */
+    /** Build the state of a page that opens: a plain object, not a promise. */
     open(info: OpenInfo): S;
     /**
      * Describe the whole page. Called after `open`, and after every event and
-     * command for every open page. It only describes: no dialogs, no changes.
+     * command for every open page. It only describes: no dialogs, no changes
+     * to the state or the storage.
      */
     render(state: S): Element;
     /**
      * A value JSON can hold, kept by tessoa and handed back to `open` after a
-     * restart. At most 16 KiB.
+     * restart. Called with every render. At most 16 KiB; more is dropped and
+     * logged.
      */
     save?(state: S): unknown;
     /** The tab title; without it, the title from plugin.toml. */
@@ -259,9 +276,14 @@ declare namespace tessoa.pages {
    * plugin.toml. Call it when the script loads, once per kind.
    *
    * Every event and every command is followed by a render of every open
-   * page, so a handler only changes the state. Handlers may be async:
-   * `await tessoa.ui.confirm(...)` in a handler shows the question, and the
-   * page keeps working while it waits for the answer.
+   * page, so a handler only changes the state, in place: what a handler
+   * returns is ignored, and there are no hooks such as `useState`. Handlers
+   * may be async: `await tessoa.ui.confirm(...)` in a handler shows the
+   * question, and the page keeps working while it waits for the answer.
+   *
+   * Every page of the plugin runs in the same script: a variable outside the
+   * state is shared by all of them, and lost when the plugin restarts. Keep
+   * what must last in `tessoa.storage`.
    */
   function define<S>(kind: string, page: PageDefinition<S>): void;
 

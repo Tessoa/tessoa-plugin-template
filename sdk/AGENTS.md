@@ -108,22 +108,36 @@ selected files. A plugin can have both.
   closest example: `examples/calculator-ts` and `calculator-rs` (buttons, keys, the
   clipboard), `examples/shelf-ts` (files), `examples/kanban-ts` (cards to drag, a
   menu, a question before deleting).
-- `render` describes the whole page every time; handlers only change the state.
-  After every event and every command the SDK renders every open page again. Do not
-  update another page by hand.
+- `render` describes the whole page every time and changes nothing; handlers
+  only change the state. After every event and every command the SDK renders
+  every open page again. Do not update another page by hand.
+- In TypeScript, change the state object in place: what a handler returns is
+  ignored, and there are no hooks such as `useState`. The handlers on elements
+  receive no state; they use the one `render` received.
 - Give every node the user acts on a key that is unique in the whole page. In a
-  list build it from the item's id (`card-12`), never from its position.
+  list build it from the item's id (`card-12`), never from its position. In Rust
+  a node without a key sends no events at all.
 - Declare the keys the page handles, written the way they type: `8`, `+`,
   `Enter`, `Ctrl+c`. Write `Ctrl+c` and `Meta+c` for a shortcut.
+- A text field keeps what the user typed until the page gives it a different
+  value. To empty a field after a submit, keep its text in the state from
+  `onInput` (Rust: `Event::Input`) and set it to `""`.
+- A button or icon button with a `menu` opens the menu on a click and sends no
+  click: give a "more" button the menu and no `onClick`.
 - Ask the user as little as possible. In a page, `await tessoa.ui.confirm(...)`
   (TypeScript) or `pages::confirm` (Rust) does not hold the page up; the answer
-  arrives later.
+  arrives later, and the data may have changed by then.
 - File references come only from the user: files dropped on a drop zone, or files
   a command kept with `files.keep`. Copy, move and trash are requests tessoa
-  carries out; the outcome arrives in `onTransferDone`.
-- Data every page shows goes in `tessoa.storage`; what one tab needs after a
-  restart is what `save` returns. In TypeScript the saved state is JSON: save a
-  `Set` or a `Map` as an array.
+  carries out; the outcome arrives in `onTransferDone` (Rust:
+  `Event::TransferDone`).
+- All pages of the plugin share one instance: a variable outside the page state
+  is shared by every page and lost when the plugin restarts. Data every page
+  shows goes in the storage (`tessoa.storage`, Rust `storage`); what one tab needs
+  after a restart is what `save` returns. In TypeScript the saved state is JSON:
+  save a `Set` or a `Map` as an array.
+- tessoa's icon names are not listed yet, and an unknown one shows a placeholder:
+  use buttons with text labels.
 - Test the page with page scenarios (`[[steps]]` in `tests/scenarios`; see
   `sdk/docs/guide/testing.md`): open the page, click, type, drop, answer, restart,
   and check the page after each step. Cover every flow the user can take, a restart

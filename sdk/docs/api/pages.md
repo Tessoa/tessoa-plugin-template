@@ -222,7 +222,7 @@ Record; Rust `ButtonProps`, TypeScript `ButtonProps`.
 |---|---|---|
 | `label` | `string` |  |
 | `kind` | `button-kind` |  |
-| `icon` | `option<string>` | A name from tessoa's icon set. |
+| `icon` | `option<string>` | A name from tessoa's icon set. This version of the interface does not list the names yet; a name tessoa does not know shows a placeholder. |
 | `disabled` | `bool` |  |
 
 ### input-props
@@ -302,7 +302,7 @@ Record; Rust `Node`, TypeScript `Node`.
 | `key` | `option<string>` | Names the node in events and keeps its state across renders. Unique within the page. Nodes that the user interacts with need one; items of a list should have one. |
 | `kind` | `node-kind` |  |
 | `layout` | `layout` |  |
-| `menu` | `list<menu-item>` | A small menu: right-clicking the node opens it, and so does a left click on a button that has no other use. The choice arrives as a `menu` event. |
+| `menu` | `list<menu-item>` | A small menu: right-clicking the node opens it, and so does a left click on a button or an icon button that has one, which then sends no `click`. The choice arrives as a `menu` event. |
 
 ### tree
 

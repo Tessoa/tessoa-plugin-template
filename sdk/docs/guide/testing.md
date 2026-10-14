@@ -140,15 +140,18 @@ expect-children = { key = "col-todo", keys = ["title-todo"] }
 A step does at most one thing and may check several; the checks run after
 the action. The first step that fails ends the scenario, and the report
 shows every open page as `tessoa-plugin render` prints it. A step refuses
-what tessoa would not deliver: a click on a disabled button or on a node that
-is not a button, a key the page did not declare, a line break typed into a
-field of one line, a drop on a zone that does not take that payload. A
-scenario that passes therefore describes something a user can do.
+what tessoa would not deliver: a click on a disabled button, on a button that
+has a menu (the click opens the menu; use `menu`) or on a node that is not a
+button, a key the page did not declare, a line break typed into a field of
+one line, a drop on a zone that does not take that payload. A scenario that
+passes therefore describes something a user can do.
 
 `[[files]]` makes the folder the user drags files from and selects files in.
 `[[dialogs]]` answers the dialogs of the commands the steps run. `[expect]`
-is checked after the last step, as for a command, without `result` and
-`error-contains`, which belong to a command.
+is checked after the last step, as for a command. Its `result` and
+`error-contains` belong to a command; in a page scenario only
+`result = "load-error"` works, for a plugin that must be refused before it
+runs.
 
 ### Pages
 
@@ -168,9 +171,9 @@ front, and no second one opens.
 |---|---|
 | `open-page = "calculator"` | Opens a page of this kind. |
 | `run = "add-to-shelf"` | Runs a command on the files of `[[files]]` that are selected. |
-| `click = "k7"` | Clicks the button (or icon button) with this key. |
+| `click = "k7"` | Clicks the button (or icon button) with this key. A button with a menu takes `menu` instead. |
 | `key = "Ctrl+c"` | Presses a key the page declares, written as the page declares it. |
-| `type = { into = "new", text = "Write report" }` | Selects everything in the text field and types the text, one character at a time: the page gets an input event after each character. A line break (`\n`) is a new line in a field of several lines, and refused in a field of one line. Typing does not submit. |
+| `type = { into = "new", text = "Write report" }` | Selects everything in the text field and types the text, one character at a time: the page gets an input event after each character, and the field holds the text whatever value the page gives it, until the page changes that value. A line break (`\n`) is a new line in a field of several lines, and refused in a field of one line. Typing does not submit. |
 | `submit = "new"` | Presses Enter in the field, or Ctrl+Enter in a field of several lines. The page gets the field's text. |
 | `toggle = "check-1"` | Clicks the checkbox: it changes to the opposite of what the page shows. |
 | `menu = { on = "card-c1", item = "rename" }` | Chooses an item of the node's menu. |
@@ -194,15 +197,18 @@ has the rows `row-1`, `row-2` for the first two files dropped on it.
 
 ### Checks
 
-Each check takes one table, or a list of tables to check several.
+`expect-text`, `expect-tree-contains`, `expect-children` and `expect-storage`
+take one table, or a list of tables to check several. `expect-transfer` and
+`expect-dialog` take one table; `expect-title`, `expect-clipboard` and
+`expect-error` take one string.
 
 | Key | Holds when |
 |---|---|
-| `expect-text = { key = "display", text = "15" }` | The node shows exactly this text; `contains = "..."` instead of `text` checks a part. A text shows its text; a button, an icon button or a checkbox its label; a text field the value the page gave it; a file row its file's name; a node that holds others the texts inside it, one per line. |
+| `expect-text = { key = "display", text = "15" }` | The node shows exactly this text; `contains = "..."` instead of `text` checks a part. A text shows its text; a button, an icon button or a checkbox its label; a text field what it holds, as tessoa keeps it: what the user typed, until the page gives the field another value than the render before (so a page that always gives `value=""` is not emptied by a submit); a file row its file's name; a node that holds others the texts inside it, one per line. |
 | `expect-tree-contains = { kind = "file-row", count = 3 }` | Nodes match the description: at least one, or exactly `count`; `count = 0` checks that none does. Every key given must hold: `key`, `kind`, `text`, `contains`, `in` (the key of a node it is inside), `disabled`, `checked`, `selected`, `multiline`, `file` (the file name a file row shows). |
 | `expect-children = { key = "col-todo", keys = ["title-todo", "c1"] }` | The node's children have these keys, in this order; children without a key are left out. |
 | `expect-title = "Shelf (3)"` | The page's tab shows this title. |
-| `expect-storage = { key = "board", json = { next = 2 } }` | The plugin's storage holds this under the key: `json` compares the value read as JSON, `text` the value read as text, `contains` a part of that text; `absent = true` checks that the key is not there. |
+| `expect-storage = { key = "board", json = { next = 2 } }` | The plugin's storage holds this under the key: `json` compares the value read as JSON, `text` the value read as text, `contains` a part of that text; `absent = true` checks that the key is not there. TOML has no `null`; check a value that contains one with `contains` or `text`. |
 | `expect-clipboard = "42"` | The plugin put this text on the clipboard, since the scenario began or the previous `expect-clipboard`. |
 | `expect-transfer = { kind = "move", files = ["a.txt"] }` | The plugin's latest copy, move or move to the recycle bin (`kind` is `copy`, `move` or `trash`) has these files in this order, and it started since the scenario began or the previous `expect-transfer`. |
 | `expect-dialog = { title = "Delete card", body-contains = "Write" }` | The page's earliest question that waits is like this: `kind` (`confirm` or `confirm-list`), `title`, `body-contains`, `items`, `items-count`. |

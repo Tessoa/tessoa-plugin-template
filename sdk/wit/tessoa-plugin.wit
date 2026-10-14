@@ -310,8 +310,8 @@ interface pages {
         kind: node-kind,
         layout: layout,
         /// A small menu: right-clicking the node opens it, and so does a
-        /// left click on a button that has no other use. The choice arrives
-        /// as a `menu` event.
+        /// left click on a button or an icon button that has one, which
+        /// then sends no `click`. The choice arrives as a `menu` event.
         menu: list<menu-item>,
     }
 
@@ -433,7 +433,9 @@ interface pages {
     record button-props {
         label: string,
         kind: button-kind,
-        /// A name from tessoa's icon set.
+        /// A name from tessoa's icon set. This version of the interface does
+        /// not list the names yet; a name tessoa does not know shows a
+        /// placeholder.
         icon: option<string>,
         disabled: bool,
     }

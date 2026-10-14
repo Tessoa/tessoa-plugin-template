@@ -99,7 +99,9 @@ pub trait Page: 'static {
         Ok(())
     }
 
-    /// Describe the whole page. Called after `open` and after every event.
+    /// Describe the whole page. Called after `open`, and after every event
+    /// and every command for every open page. It only describes: no
+    /// questions, no storage writes.
     fn render(&self) -> Node;
 
     /// The tab title. `None` keeps the title from `plugin.toml`, or the one
@@ -116,7 +118,8 @@ pub trait Page: 'static {
     }
 
     /// Bytes tessoa keeps for the page and hands back to [`Page::open`] after
-    /// a restart. At most 16 KiB; more is dropped and logged.
+    /// a restart. Called with every render. At most 16 KiB; more is dropped
+    /// and logged.
     fn save(&self) -> Option<Vec<u8>> {
         None
     }
@@ -275,7 +278,8 @@ pub fn text(text: impl Into<String>) -> Node {
     }))
 }
 
-/// A button. Its key arrives in [`Event::Click`].
+/// A button. Its key arrives in [`Event::Click`], so give it one; a button
+/// with a [`Node::menu`] opens the menu instead.
 pub fn btn(label: impl Into<String>) -> Node {
     node(NodeKind::Button(wire::ButtonProps {
         label: label.into(),
@@ -286,7 +290,8 @@ pub fn btn(label: impl Into<String>) -> Node {
 }
 
 /// A button that shows only an icon from tessoa's icon set; the label is its
-/// tooltip.
+/// tooltip. The names of the set are not listed yet, and a name tessoa does
+/// not know shows a placeholder, so prefer [`btn`] with a label.
 pub fn icon_btn(icon: impl Into<String>, label: impl Into<String>) -> Node {
     node(NodeKind::IconButton(wire::ButtonProps {
         label: label.into(),
@@ -378,7 +383,8 @@ impl MenuItem {
 
 impl Node {
     /// Names the node in events and keeps its state across renders. Unique
-    /// within the page.
+    /// within the page. Events name nodes only by key: a node the user acts
+    /// on without a key sends nothing.
     pub fn key(mut self, key: impl Into<String>) -> Self {
         self.key = Some(key.into());
         self
@@ -469,7 +475,9 @@ impl Node {
     }
 
     /// A small menu: right-clicking the node opens it, and so does a left
-    /// click on a button. The choice arrives as [`Event::Menu`].
+    /// click on a button or an icon button that has one, which then sends no
+    /// [`Event::Click`]. The choice arrives as [`Event::Menu`] with the
+    /// node's key, so give the node one.
     pub fn menu(mut self, items: impl IntoIterator<Item = MenuItem>) -> Self {
         self.menu = items.into_iter().collect();
         self

@@ -77,7 +77,7 @@ For pages:
 
 | Call | Notes |
 |---|---|
-| `tessoa.pages.define(kind, { open, render, save, title, keys, onKey, onTransferDone, onActivated, close })` | Defines a kind of page declared in `plugin.toml`; call it when the script loads. See [pages.md](pages.md). |
+| `tessoa.pages.define(kind, { open, render, save, title, keys, onKey, onTransferDone, onActivated, close })` | Defines a kind of page declared in `plugin.toml`; call it when the script loads. Handlers change the state in place; what they return is ignored. See [pages.md](pages.md). |
 | `tessoa.pages.h(type, props, ...children)` | An element without JSX. |
 | `tessoa.pagesHost.open(kind, args?)` | Opens a page of the plugin, or brings a `single` one to the front; returns its id. `args` is any JSON value. |
 | `tessoa.pagesHost.setTitle(page, title)` | Changes the title of the page's tab. |
