@@ -118,7 +118,8 @@ Colours are strings written `"#rrggbb"`, in either case. A missing required
 key, or a colour written any other way, makes the whole theme unused: the
 manifest still loads and the pages show tessoa's colours. Keys outside the
 table are ignored. See [pages.md](pages.md#colours) for what the theme covers
-and the contrast it needs.
+and the contrast it needs; not every colour is used with every component
+style.
 
 ## `[permissions]`
 

@@ -258,9 +258,10 @@ plugin log.
 
 The theme colours the content of the pages only. The tab bar and the sidebar
 around a page stay tessoa's, and so do the shapes, corners and shadows of the
-component style the user chose. The plugin's colours are the default; the
-user can switch a plugin's pages to tessoa's colours in Settings › System ›
-Extensions.
+component style the user chose. A component style may also draw some parts
+in its own way, so not every colour of the theme is used with every style.
+The plugin's colours are the default; the user can switch a plugin's pages to
+tessoa's colours in Settings › System › Extensions.
 
 Keep the colours readable: text needs a contrast of at least 4.5:1 against
 the background and against the surface, and the accent at least 3:1 against
