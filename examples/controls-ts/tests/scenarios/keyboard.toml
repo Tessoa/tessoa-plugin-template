@@ -1,0 +1,71 @@
+# The controls examples, in Rust and in TypeScript, pass the same scenarios.
+# Tab goes through every control with a key, in the order of the page, round
+# from the end to the start: not through text, images or progress bars, not
+# into a closed fold or a closed popup.
+name = "Tab goes through the controls in the order of the page"
+
+[[steps]]
+open-page = "controls"
+expect-focus = ""
+
+[[steps]]
+key = "Tab"
+expect-focus = "format"
+
+[[steps]]
+key = "Tab"
+expect-focus = "size"
+
+[[steps]]
+focus = "day"
+
+[[steps]]
+key = "Tab"
+expect-focus = "about#1"
+
+[[steps]]
+key = "Tab"
+expect-focus = "about#2"
+
+# Enter opens the link that has the focus: this one belongs to the page.
+[[steps]]
+key = "Enter"
+expect-value = { key = "more", value = true }
+
+[[steps]]
+key = "Tab"
+expect-focus = "more"
+
+# The fold is open now, so the checkbox inside it is a stop.
+[[steps]]
+key = "Tab"
+expect-focus = "beta"
+
+[[steps]]
+key = "Space"
+expect-tree-contains = { key = "beta", checked = true }
+
+[[steps]]
+key = "Tab"
+expect-focus = "rename"
+
+# The closed popup's field and buttons are not stops: the list comes next.
+[[steps]]
+key = "Tab"
+expect-focus = "items"
+
+[[steps]]
+key = "Tab"
+expect-focus = "planets"
+
+[[steps]]
+key = "Tab"
+expect-focus = "files"
+
+[[steps]]
+key = "Tab"
+expect-focus = "format"
+
+[[steps]]
+key = "Shift+Tab"
+expect-focus = "files"

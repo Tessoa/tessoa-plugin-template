@@ -1,0 +1,18 @@
+[plugin]
+id = "com.example.csv-table"
+name = "CSV table"
+version = "0.1.0"
+api = "tessoa:plugin@0.2.0"
+
+[entry]
+kind = "js"
+file = "dist/plugin.js"
+
+[[pages]]
+id = "csv"
+title = "CSV table"
+icon = "menu"
+
+[permissions]
+files = ["read-selected"]
+clipboard = ["write"]

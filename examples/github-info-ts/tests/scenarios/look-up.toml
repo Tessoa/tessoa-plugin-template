@@ -1,0 +1,73 @@
+# GitHub info: the page asks GitHub's API about a repository and shows what
+# it answers. Scenarios never go to the network: [[net]] answers the
+# requests, after the runner checked them against the websites the manifest
+# lists, and expect-request checks what the page sent.
+name = "Looks up a repository and shows it, after a restart too"
+
+[[net]]
+url = "https://api.github.com/repos/acme/rocket"
+headers = { "content-type" = "application/json; charset=utf-8" }
+body = '''
+{
+  "full_name": "acme/rocket",
+  "description": "A rocket that lands on its own.",
+  "stargazers_count": 12345,
+  "forks_count": 678,
+  "open_issues_count": 9,
+  "language": "Rust",
+  "license": { "spdx_id": "MIT", "name": "MIT License" },
+  "pushed_at": "2026-10-14T09:12:33Z",
+  "archived": false
+}
+'''
+
+[[steps]]
+open-page = "github"
+expect-tree-contains = [{ key = "look-up", disabled = true }, { key = "card", count = 0 }]
+
+[[steps]]
+type = { into = "repo", text = "acme/rocket" }
+expect-tree-contains = { key = "look-up", disabled = false }
+
+# The page waits for the answer without holding up; here it comes at once.
+[[steps]]
+submit = "repo"
+expect-request = { method = "GET", url = "https://api.github.com/repos/acme/rocket", headers = { accept = "application/vnd.github+json" } }
+expect-title = "acme/rocket"
+expect-text = [
+  { key = "name", text = "acme/rocket" },
+  { key = "description", text = "A rocket that lands on its own." },
+  { key = "stars", text = "12,345" },
+  { key = "forks", text = "678" },
+  { key = "issues", text = "9" },
+  { key = "language", text = "Rust" },
+  { key = "licence", text = "MIT" },
+  { key = "pushed", text = "2026-10-14" },
+  { key = "status", text = "" },
+]
+
+# The link leads to the repository on github.com; tessoa shows the address
+# and asks the user before opening it.
+[[steps]]
+click-link = { on = "link", link = "GitHub" }
+expect-open-url = "https://github.com/acme/rocket"
+
+# The repository's address works as well, and so does the button.
+[[steps]]
+type = { into = "repo", text = "https://github.com/acme/rocket/tree/main" }
+
+[[steps]]
+click = "look-up"
+expect-request = { url = "https://api.github.com/repos/acme/rocket" }
+expect-text = { key = "stars", text = "12,345" }
+
+# The page saved the repository it shows, and shows it after a restart.
+[[steps]]
+restart = true
+expect-title = "acme/rocket"
+expect-text = [{ key = "name", text = "acme/rocket" }, { key = "stars", text = "12,345" }]
+
+[[steps]]
+click = "refresh"
+expect-request = { url = "https://api.github.com/repos/acme/rocket" }
+expect-text = { key = "status", text = "" }

@@ -67,6 +67,12 @@ it; in short:
 | `tessoa.files.selected()` | `{ handle, name, size, modifiedMs, isDir }` per selected file. |
 | `tessoa.files.read(handle, offset?, maxLen?)`, `readAll(handle)` | `Uint8Array`. Needs `files.read-selected`. |
 | `tessoa.files.rename([{ handle, newName }])` | One outcome per request: `{ renamed }`, `{ skipped }` or `{ failed }`. Needs `files.rename-selected`. |
+| `await tessoa.files.pickFiles({ title, extensions, multiple })`, `pickFolder({ title })`, `createFile(folder, path, data)` | tessoa's pickers, and a new file in a picked folder. See [files.md](files.md). |
+| `await tessoa.net.fetch(url, { method, headers, body })` | A request to a website `plugin.toml` lists; the answer has `ok`, `status`, `text()`, `json()`. See [network.md](network.md). |
+| `tessoa.tasks.define(kind, run)`, `tessoa.tasks.start(kind, title, input)` | Long work in a worker, with progress and cancelling. See [tasks.md](tasks.md). |
+| `tessoa.settings.get(id)` | A setting `[[settings]]` declares, as its type has it. See [settings.md](settings.md). |
+| `tessoa.columns.define(id, (file) => value)` | The values of a column `[[columns]]` declares. See [columns.md](columns.md). |
+| `tessoa.images.add(data)` | An image for `<image src={id}>`: the bytes of a picture, or the text of an SVG. |
 
 `read` and `rename` throw a `FilesError` with `kind` set to `not-granted`,
 `permission-denied` or `io` when the host refuses the call. An error thrown
@@ -87,6 +93,9 @@ For pages:
 | `tessoa.storage.get(key)`, `set(key, bytes)`, `remove(key)`, `keys()` | The plugin's own storage, shared by its pages and commands and kept across restarts. Values are `Uint8Array`; store JSON with `TextEncoder`. |
 | `tessoa.clipboard.writeText(text)` | Needs `clipboard.write`. |
 | `tessoa.ui.language()` | `en`, `zh`, `ja` or `de`, for the plugin's own texts. |
+| `tessoa.ui.openUrl(url)` | Offers a web address; tessoa asks the user before opening it. Only while a handler handles something the user did. |
+| `tessoa.ui.openSettings()` | Opens the plugin's settings in tessoa. |
+| `new tessoa.pages.TreeModel()` | The rows of a tree; see [lists.md](lists.md#trees). |
 
 ## Text
 
@@ -108,12 +117,14 @@ declarations would clash.
 
 ## What is different from Node.js
 
-There is no `require`, no `import` of Node modules, no `fs`, no `fetch`, no
+There is no `require`, no `import` of Node modules, no `fs`, no global
+`fetch` (`tessoa.net.fetch` reaches the websites the manifest lists), no
 timers. Pure JavaScript libraries bundle fine; anything that needs Node's
 built-in modules does not. The engine is QuickJS: ample for reading headers
 and deciding names, but a byte-by-byte loop over megabytes runs a couple of
 hundred times slower than the same loop in Rust. Heavy processing belongs in
-a Rust plugin.
+a Rust plugin, and in a task in either language, so that the pages keep
+working meanwhile.
 
 Standard output is captured into the plugin log, so `print` style debugging
 works but `console.log` is the intended way.

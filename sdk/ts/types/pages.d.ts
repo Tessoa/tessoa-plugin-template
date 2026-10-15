@@ -1,7 +1,15 @@
 // Pages in TypeScript: `tessoa.pages.define`, the elements a page renders,
-// and their attributes. Written by hand; the enumerations (Space, Align,
-// TextSize and so on), KeyPress and IconName are generated from
+// their attributes, the rows of lists, tables and trees, and TreeModel.
+// Written by hand; the enumerations (Space, Align, TextSize, Fit, Selection,
+// Expander and so on), KeyPress and IconName are generated from
 // wit/tessoa-plugin.wit into tessoa.d.ts, in the same namespace.
+//
+// The defaults are the Rust SDK's, so that a page written in either language
+// makes the same nodes: a number input takes -1e9 to 1e9 in steps of 1 and
+// shows as many decimals as its step has; a slider goes from 0 to 100 in
+// steps of 1; a list, a table or a tree selects one row at a time; a column
+// is as wide as its content, aligned to the start and not sortable; an image
+// is contained in its node.
 
 declare namespace tessoa.pages {
   /**
@@ -68,11 +76,16 @@ declare namespace tessoa.pages {
     /**
      * A small menu: right-clicking the node opens it, and so does a left
      * click on a button or an icon button that has one, which then does not
-     * call its `onClick`.
+     * call its `onClick`. A list's menu acts on its selected rows.
      */
     menu?: MenuItem[];
     /** An item of `menu` was chosen; receives its id. */
     onMenu?: (item: string) => void;
+    /**
+     * A line shown when the pointer rests on the node, at most 1 KiB. An
+     * icon button without one shows its label, an image its `alt`.
+     */
+    tooltip?: string;
   }
 
   interface ContainerAttributes extends NodeAttributes {
@@ -188,6 +201,359 @@ declare namespace tessoa.pages {
     payload: string;
   }
 
+  /**
+   * An option of a dropdown, a radio group, segmented buttons or tabs. A
+   * plain string is an option whose id is its label.
+   */
+  interface ChoiceOption {
+    /** Names the option in `value` and in `onChange`. Unique within the node, not empty. */
+    id: string;
+    label: string;
+    /** An icon from tessoa's icon set before the label. */
+    icon?: IconName;
+    /** Shown, but cannot be chosen. */
+    disabled?: boolean;
+  }
+
+  /**
+   * A dropdown, a radio group, segmented buttons or tabs. The control shows
+   * `value`: render the option `onChange` receives as the new value, or the
+   * control goes back to the old one.
+   */
+  interface ChoiceAttributes extends NodeAttributes {
+    /** The id of the chosen option; "" for none. */
+    value: string;
+    /** At most 256. */
+    options: (ChoiceOption | string)[];
+    disabled?: boolean;
+    /** An option was chosen; receives its id. */
+    onChange?: (option: string) => void;
+  }
+
+  interface SwitchAttributes extends NodeAttributes {
+    checked: boolean;
+    /** Receives the new state. */
+    onToggle?: (checked: boolean) => void;
+    /** The label. */
+    children?: Child;
+  }
+
+  /**
+   * A number field with up and down arrows. It shows `value`: render the
+   * number `onChange` receives, or the field goes back to the old one.
+   */
+  interface NumberInputAttributes extends NodeAttributes {
+    value: number;
+    /** -1,000,000,000 without it. */
+    min?: number;
+    /** 1,000,000,000 without it. */
+    max?: number;
+    /**
+     * What the arrows and the arrow keys add or take, and what a typed
+     * number is rounded to; 1 without it. Greater than 0.
+     */
+    step?: number;
+    /** The digits after the decimal point; as many as `step` has without it. */
+    decimals?: number;
+    /** Shown dimmed after the number, such as `px` or `%`. */
+    suffix?: string;
+    disabled?: boolean;
+    /**
+     * The new value, within `min` and `max` and on the step: on Enter, when
+     * the field loses the focus, and on the arrows; not while the user types.
+     */
+    onChange?: (value: number) => void;
+  }
+
+  /** A slider. It shows `value`: render the number `onChange` receives. */
+  interface SliderAttributes extends NodeAttributes {
+    value: number;
+    /** 0 without it. */
+    min?: number;
+    /** 100 without it. */
+    max?: number;
+    /** The values the slider stops at, from `min` on; 1 without it. */
+    step?: number;
+    /** Upright, with `min` at the bottom. */
+    vertical?: boolean;
+    disabled?: boolean;
+    /** The new value, while the slider is dragged and once more when it is let go. */
+    onChange?: (value: number) => void;
+  }
+
+  interface ProgressAttributes extends NodeAttributes {
+    /**
+     * How far, from 0 to 1; undefined when it is not known, which shows a
+     * moving bar. A task's `progress` is either.
+     */
+    value?: number | null;
+  }
+
+  interface ImageAttributes extends NodeAttributes {
+    /**
+     * A PNG, JPEG, GIF, WebP, BMP or SVG file in the plugin's directory,
+     * written with `/`, such as `"images/logo.png"`; or the number
+     * `tessoa.images.add` returned. Without `w` and `h` the image takes its
+     * own size in pixels.
+     */
+    src: string | number;
+    /** How the image fills its node, as CSS `object-fit`; `"contain"` without it. */
+    fit?: Fit;
+    /** What the image shows, in words; its tooltip when it has none. */
+    alt?: string;
+  }
+
+  /**
+   * Text with bold, italic and code spans and links, written as its
+   * children: `<rich-text>Read <b>this</b> or <a href="https://example.com">the
+   * site</a> or <a action="more">more</a></rich-text>`.
+   */
+  interface RichTextAttributes extends NodeAttributes {
+    size?: TextSize;
+    /** Break lines to fit the width instead of cutting the text off. */
+    wrap?: boolean;
+    /** How the lines are aligned. */
+    align?: TextAlign;
+    /** A link with an `action` was clicked; receives the action. */
+    onLink?: (action: string) => void;
+    /** Text, and `<b>`, `<i>`, `<code>`, `<a>` and `<span>` around text. At most 2048 spans. */
+    children?: Child;
+  }
+
+  /** `<b>`, `<i>`, `<code>` and `<span>` inside rich text. */
+  interface SpanAttributes {
+    /** The colour, by meaning. */
+    tone?: Tone;
+    children?: Child;
+  }
+
+  /** `<a>` inside rich text: an `href` or an `action`, not both. */
+  interface LinkAttributes extends SpanAttributes {
+    /**
+     * A web address, `http` or `https`. tessoa shows the user the whole
+     * address and opens it in the browser when they agree; the page hears
+     * nothing of it.
+     */
+    href?: string;
+    /** An id that `onLink` of the rich text receives. */
+    action?: string;
+  }
+
+  /** A colour swatch; clicking it opens a colour picker. */
+  interface ColorPickerAttributes extends NodeAttributes {
+    /** `"#rrggbb"`, or a number 0xrrggbb. */
+    value: string | number;
+    disabled?: boolean;
+    /** The colour the user picked, as `"#rrggbb"`. */
+    onChange?: (color: string) => void;
+  }
+
+  /** A button showing a date; clicking it opens a calendar. */
+  interface DatePickerAttributes extends NodeAttributes {
+    /**
+     * The date, written `"2026-10-15"`, or a `Date` (its day where the user
+     * is); undefined shows an empty button.
+     */
+    value?: string | Date | null;
+    /** Days before this cannot be chosen. */
+    min?: string | Date;
+    /** Days after this cannot be chosen. */
+    max?: string | Date;
+    disabled?: boolean;
+    /** The day the user chose, as `"2026-10-15"`, or undefined when they cleared it. */
+    onChange?: (date: string | undefined) => void;
+  }
+
+  /** A column of a table. A list or a tree given columns uses the first. */
+  interface Column {
+    /** Names the column in `onSort` and `onRowCheck`. Unique within the node, not empty. */
+    id: string;
+    /** Shown in the header. */
+    title: string;
+    /** The width the column starts with; the user can drag it, and tessoa remembers it. */
+    width?: Size;
+    /** How the cells line up. */
+    align?: TextAlign;
+    /** A click on the header calls `onSort`. */
+    sortable?: boolean;
+  }
+
+  /** The column the page sorted its rows by, shown as an arrow in the header. */
+  interface SortState {
+    column: string;
+    descending: boolean;
+  }
+
+  /**
+   * One cell of a row: text or a number; `null` or `undefined` for nothing;
+   * `{ text, tone, icon }` for text with a colour or an icon; `{ file }`, a
+   * file issued to the plugin, drawn as in tessoa's file list; `{ image }`,
+   * a small picture, as for `<image src>`; `{ check }`, a checkbox, which
+   * calls `onRowCheck`; `{ progress }`, a bar from 0 to 1.
+   */
+  type Cell =
+    | string
+    | number
+    | null
+    | undefined
+    | { text: string; tone?: Tone; icon?: IconName }
+    | { file: tessoa.files.FileRef }
+    | { image: string | number }
+    | { check: boolean }
+    | { progress: number };
+
+  /** A button at the end of a row, shown while the pointer is over it. */
+  interface RowAction {
+    /** What `onRowAction` receives. */
+    id: string;
+    icon: IconName;
+    /** Its tooltip. */
+    label: string;
+  }
+
+  /**
+   * One row of a list, a table or a tree. Rows are data, not nodes: they
+   * have no keys and no layout, and all have the same height.
+   */
+  interface Row {
+    /**
+     * Names the row in the events; the selection follows it when rows move.
+     * At most 128 bytes, unique within the list.
+     */
+    id: string;
+    /** One per column, in order. */
+    cells: Cell[];
+    /** The second line, dimmed, when the list has `twoLine`. */
+    detail?: string;
+    /** The level in a tree, 0 at the top. */
+    depth?: number;
+    /** Whether a tree's row has children, and whether they show. */
+    expander?: Expander;
+    /** At most 4. */
+    actions?: RowAction[];
+    /** The colour of the whole row, by meaning. */
+    tone?: Tone;
+  }
+
+  /**
+   * A list, a table or a tree: `count` rows, of which tessoa asks `row` for
+   * the ones on screen, so a list can have up to a million. Give it a key.
+   * The user selects rows in tessoa at once; the page hears of it in
+   * `onSelect`. Beyond two hundred items or so, use one of these instead
+   * of a column of nodes.
+   */
+  interface ListAttributes extends NodeAttributes {
+    /** How many rows there are, at most 1,000,000. */
+    count: number;
+    /**
+     * Row `i`, from 0, described from the page's data: the same data gives
+     * the same row. Called when tessoa asks, not while the page renders.
+     */
+    row: (i: number) => Row;
+    /**
+     * The id of row `i` alone, for selecting rows the user never scrolled
+     * to; without it, the id of `row(i)`.
+     */
+    rowId?: (i: number) => string;
+    /** How rows can be selected; `"single"` without it. */
+    selection?: Selection;
+    /**
+     * Selects these rows by id, replacing what the user selected, when they
+     * differ from what the previous render gave; without it the selection is
+     * the user's. At most 10,000.
+     */
+    selected?: string[];
+    /** Each row has a second, dimmed line: its `detail`. */
+    twoLine?: boolean;
+    /** Shown when there are no rows. */
+    empty?: string;
+    /** The selected rows changed; receives their ids, in the order of the rows. */
+    onSelect?: (ids: string[]) => void;
+    /** A row was opened: double click or Enter. */
+    onActivate?: (row: string) => void;
+    /** The checkbox of a row's cell was clicked; receives its new state. */
+    onRowCheck?: (row: string, column: string, checked: boolean) => void;
+    /** A button at the end of a row was clicked; receives its id. */
+    onRowAction?: (row: string, action: string) => void;
+    /** The first is the one a list or a tree uses. */
+    columns?: Column[];
+  }
+
+  /** A table: a list with columns under a header that can sort and resize them. */
+  interface TableAttributes extends ListAttributes {
+    /** At most 32. The cells of a row go with the columns, in order. */
+    columns: Column[];
+    /** The column the page sorted its rows by; tessoa does not sort. */
+    sort?: SortState;
+    /**
+     * A sortable column's header was clicked: first ascending, then the
+     * other way round. Sort the rows and render `sort` to match.
+     */
+    onSort?: (column: string, descending: boolean) => void;
+  }
+
+  /**
+   * A tree: a list whose rows have a depth and an expander. The page decides
+   * which rows exist; `TreeModel` does that work for it.
+   */
+  interface TreeAttributes extends ListAttributes {
+    /** The expander of a row was clicked: true to show its children. */
+    onExpand?: (row: string, open: boolean) => void;
+  }
+
+  /** Children in a grid, filled row by row. */
+  interface GridAttributes extends ContainerAttributes {
+    /**
+     * Children per row, 1 to 32. A column is as wide as its widest child;
+     * room to spare is shared equally.
+     */
+    columns: number;
+  }
+
+  /** A title that opens and closes the children below it. */
+  interface FoldAttributes extends ContainerAttributes {
+    title: string;
+    /** The children show. Closed, they stay in the tree but are not drawn. */
+    open: boolean;
+    /** The title was clicked; receives the new state. Render it as `open`. */
+    onToggle?: (open: boolean) => void;
+  }
+
+  /**
+   * Exactly two children side by side, or one above the other, with a bar
+   * between them that the user can drag; tessoa remembers where.
+   */
+  interface SplitAttributes extends NodeAttributes {
+    /**
+     * The share of the first child, between 0 and 1. tessoa keeps where the
+     * user dragged the bar until the page gives another ratio.
+     */
+    ratio: number;
+    /** One above the other instead of side by side. */
+    vertical?: boolean;
+    /** The bar was let go; receives the share of the first child. */
+    onChange?: (ratio: number) => void;
+    /** The two sides. */
+    children?: Child;
+  }
+
+  /**
+   * Its children in a panel over the page while `open` is true; `w` is the
+   * width of the panel. One popup of a page is open at a time.
+   */
+  interface PopupAttributes extends ContainerAttributes {
+    open: boolean;
+    /** A title line with a close button. */
+    title?: string;
+    /** The key of a node to show the popup below; centred on the page without it. */
+    anchor?: string;
+    /**
+     * Escape, a click outside or the close button: render `open` false to
+     * close the popup, which stays open until then.
+     */
+    onDismiss?: () => void;
+  }
+
   /** The node kinds, `<column>`, `<text>` and so on, with their attributes. */
   interface Elements {
     /** Children top to bottom. */
@@ -217,6 +583,42 @@ declare namespace tessoa.pages {
     "drop-zone": DropZoneAttributes;
     /** Its children can be dragged onto drop zones of the page that take items. */
     draggable: DraggableAttributes;
+    /** A button showing the chosen option; clicking it opens the options. */
+    dropdown: ChoiceAttributes;
+    /** The options one below the other, each with a round mark. */
+    "radio-group": ChoiceAttributes;
+    /** The options side by side as joined buttons. */
+    segmented: ChoiceAttributes;
+    /** A row of tabs. Only the tabs: the page shows what belongs to the chosen one below them. */
+    tabs: ChoiceAttributes;
+    /** An on/off switch. */
+    switch: SwitchAttributes;
+    "number-input": NumberInputAttributes;
+    slider: SliderAttributes;
+    /** A progress bar. */
+    progress: ProgressAttributes;
+    image: ImageAttributes;
+    "rich-text": RichTextAttributes;
+    "color-picker": ColorPickerAttributes;
+    "date-picker": DatePickerAttributes;
+    /** Rows in one column. */
+    list: ListAttributes;
+    table: TableAttributes;
+    tree: TreeAttributes;
+    grid: GridAttributes;
+    fold: FoldAttributes;
+    split: SplitAttributes;
+    popup: PopupAttributes;
+    /** Inside rich text: bold. */
+    b: SpanAttributes;
+    /** Inside rich text: italic. */
+    i: SpanAttributes;
+    /** Inside rich text: in a fixed-width font on a faint background. */
+    code: SpanAttributes;
+    /** Inside rich text: a link. */
+    a: LinkAttributes;
+    /** Inside rich text: text in a colour. */
+    span: SpanAttributes;
   }
 
   /** What a page's `open` receives. */
@@ -298,4 +700,91 @@ declare namespace tessoa.pages {
    */
   function h<K extends keyof Elements>(type: K, attributes?: Elements[K] | null, ...children: Child[]): Element;
   function h<P>(type: (props: P) => Element, attributes: P, ...children: Child[]): Element;
+
+  /** One row of a `TreeModel`: the item it shows, and how. */
+  interface TreeRow<T> {
+    id: string;
+    value: T;
+    /** The level, 0 at the top. */
+    depth: number;
+    expander: Expander;
+  }
+
+  /** What `describe` of a `TreeModel` makes of an item: a row, whose id, depth and expander the tree sets. */
+  type RowDescription = Omit<Row, "id" | "depth" | "expander"> & Partial<Pick<Row, "id">>;
+
+  /**
+   * The rows of a tree node, worked out from items. Which rows a tree shows
+   * depends on which of its items are open, and tessoa asks for rows by
+   * number. A `TreeModel` keeps the items, each with an id unique in the
+   * whole tree and a value of the page's choosing, remembers which are
+   * open, and answers by number with the item's depth and expander filled
+   * in:
+   *
+   * ```tsx
+   * const outline = new tessoa.pages.TreeModel<string>();
+   * outline.setRoots([["intro", "Introduction"], ["usage", "Usage"]]);
+   * outline.setChildren("usage", [["usage/install", "Install"]]);
+   *
+   * <tree key="outline" count={outline.count()}
+   *       row={(i) => outline.row(i, (id, title) => ({ cells: [title] }))}
+   *       onExpand={(row, open) => outline.expand(row, open)} />
+   * ```
+   *
+   * An item with children has an expander; one without has none, unless
+   * `setLazy` says its children come later. Opening such an item makes
+   * `expand` return true: the page then sets the children, at once or when
+   * a task has found them, perhaps with a row such as "Loading…" meanwhile,
+   * which is a child like any other. The Rust SDK's `TreeModel` works the
+   * same way.
+   */
+  class TreeModel<T> {
+    /**
+     * Replace the items at the top, in order, with `[id, value]` pairs. An
+     * item that was in the tree before, matched by id, keeps what is below
+     * it and stays open or closed, wherever it was; the ones left out go,
+     * with everything below them. An id given twice counts once.
+     */
+    setRoots(items: Iterable<readonly [string, T]>): void;
+    /**
+     * Replace the children of the item `parent`, the way `setRoots`
+     * replaces the items at the top. An item cannot go below itself: the id
+     * of `parent` or of an item above it is left out. False, and nothing
+     * changes, when the tree has no item `parent`.
+     */
+    setChildren(parent: string, items: Iterable<readonly [string, T]>): boolean;
+    /**
+     * The children of `id` come later: it gets an expander, and opening it
+     * makes `expand` return true. Children it had go, with everything below
+     * them. False when the tree has no item `id`.
+     */
+    setLazy(id: string): boolean;
+    /**
+     * Open or close `id`, as `onExpand` asks. True when it opened and its
+     * children are still to come. An id the tree does not have is left alone.
+     */
+    expand(id: string, open: boolean): boolean;
+    /** Whether `id` is open. Closed items keep the open state of the items below them. */
+    isOpen(id: string): boolean;
+    /** The value of the item `id`. */
+    get(id: string): T | undefined;
+    /** Change the value of `id`; where it is in the tree stays as it is. False when there is no such item. */
+    set(id: string, value: T): boolean;
+    /** Remove every item. */
+    clear(): void;
+    /** How many rows the tree shows: the `count` of the tree node. */
+    count(): number;
+    /** Row `i`, from 0: the item it shows, its depth and its expander. */
+    row(i: number): TreeRow<T> | undefined;
+    /**
+     * Row `i` for the tree node's `row`: `describe` makes it from the item's
+     * id and value, and the tree sets its id, depth and expander. tessoa asks
+     * only for rows below the count; beyond it this is undefined.
+     */
+    row(i: number, describe: (id: string, value: T) => RowDescription): Row;
+    /** The rows from `start`, at most `count`, made by `describe` as for `row`. */
+    rows(start: number, count: number, describe: (id: string, value: T) => RowDescription): Row[];
+    /** The ids of the rows from `start`, at most `count`, for the tree node's `rowId`. */
+    rowIds(start: number, count: number): string[];
+  }
 }

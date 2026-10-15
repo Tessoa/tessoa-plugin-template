@@ -18,3 +18,36 @@ ts   plugin.runCommand(commandId: string): void | Promise<void>
 
 Run one of the commands declared in the manifest. The error text goes
 to the plugin log and is shown to the user.
+
+### on-event
+
+```
+wit  on-event: func(ev: plugin-event)
+rust fn on_event(event: PluginEvent)   (in impl Plugin, optional; every open page hears the same as an Event, and the pages are rendered again afterwards)
+ts   nothing to write: a task's handle follows its progress and outcome, and every page renders again
+```
+
+Something happened; see `plugin-event`. Called in the plugin's own
+instance, never in a worker.
+
+## Types
+
+### task-progress
+
+Defined in [tasks](tasks.md#task-progress).
+
+### task-outcome
+
+Defined in [tasks](tasks.md#task-outcome).
+
+### plugin-event
+
+Variant; Rust `PluginEvent`, TypeScript `PluginEvent`.
+
+Something that concerns the plugin as a whole rather than one page.
+
+| Case | Payload | Meaning |
+|---|---|---|
+| `task-progress` | `task-progress` | A task reported progress; at most 5 times a second per task. |
+| `task-done` | `tuple<u64, task-outcome>` | A task ended. Carries the task id and the outcome. |
+| `settings-changed` | `list<string>` | The user changed settings. Carries their ids. |

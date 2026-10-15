@@ -1,0 +1,87 @@
+# GitHub info: what the page says when the look-up goes wrong. A status such
+# as 404 is an answer; a request that gets no answer throws.
+name = "Says what went wrong: no such repository, the limit, no answer"
+
+[[net]]
+url = "https://api.github.com/repos/acme/rocket"
+body = '{ "full_name": "acme/rocket", "stargazers_count": 5 }'
+
+[[net]]
+url = "https://api.github.com/repos/acme/missing"
+status = 404
+body = '{ "message": "Not Found" }'
+
+[[net]]
+url = "https://api.github.com/repos/acme/busy"
+status = 403
+headers = { "x-ratelimit-remaining" = "0" }
+body = '{ "message": "API rate limit exceeded" }'
+
+[[net]]
+url = "https://api.github.com/repos/acme/broken"
+status = 502
+
+[[net]]
+url = "https://api.github.com/repos/acme/slow"
+error = "timeout"
+
+[[steps]]
+open-page = "github"
+
+# Not a repository: the page says how to write one and asks GitHub nothing
+# (a request no [[net]] entry answers would fail the step).
+[[steps]]
+type = { into = "repo", text = "rocket" }
+
+[[steps]]
+submit = "repo"
+expect-text = { key = "status", contains = "owner/name" }
+
+[[steps]]
+type = { into = "repo", text = "acme/missing" }
+
+[[steps]]
+submit = "repo"
+expect-text = { key = "status", text = "GitHub has no public repository acme/missing." }
+expect-tree-contains = { key = "card", count = 0 }
+
+[[steps]]
+type = { into = "repo", text = "acme/busy" }
+
+[[steps]]
+submit = "repo"
+expect-text = { key = "status", contains = "limit" }
+
+[[steps]]
+type = { into = "repo", text = "acme/broken" }
+
+[[steps]]
+submit = "repo"
+expect-text = { key = "status", text = "GitHub answered 502." }
+
+[[steps]]
+type = { into = "repo", text = "acme/slow" }
+
+[[steps]]
+submit = "repo"
+expect-text = { key = "status", text = "GitHub did not answer in time. Try again." }
+
+# A repository that is found: what GitHub leaves out shows as a dash.
+[[steps]]
+type = { into = "repo", text = "acme/rocket" }
+
+[[steps]]
+submit = "repo"
+expect-text = [
+  { key = "stars", text = "5" },
+  { key = "description", text = "No description." },
+  { key = "language", text = "-" },
+]
+
+# A failed look-up of another repository takes the old one off the page.
+[[steps]]
+type = { into = "repo", text = "acme/slow" }
+
+[[steps]]
+submit = "repo"
+expect-tree-contains = { key = "card", count = 0 }

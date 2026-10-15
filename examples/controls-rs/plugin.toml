@@ -1,0 +1,14 @@
+[plugin]
+id = "com.example.controls"
+name = "Controls"
+version = "0.1.0"
+api = "tessoa:plugin@0.2.0"
+
+[entry]
+kind = "wasm"
+file = "dist/plugin.wasm"
+
+[[pages]]
+id = "controls"
+title = "Controls"
+icon = "sliders"

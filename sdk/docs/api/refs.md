@@ -20,6 +20,27 @@ or were released, are left out of the result.
 
 Permission: none.
 
+### read
+
+```
+wit  read: func(ref: file-ref, offset: u64, max-len: u32) -> result<list<u8>, error>
+rust tessoa_plugin_sdk::refs::read(ref: FileRef, offset: u64, max_len: u32) -> Result<Vec<u8>, Error>
+ts   tessoa.refs.read(ref: FileRef, offset?: number, maxLen?: number): Uint8Array
+```
+
+Read up to `max-len` bytes of a referenced file, starting at `offset`:
+a file the user dropped on a page or picked, or one the plugin kept or
+created.
+Requires the `files.read-selected` permission.
+
+Permission: `files.read-selected`.
+
+TypeScript also has:
+
+```
+tessoa.refs.readAll(ref: FileRef): Uint8Array
+```
+
 ### release
 
 ```

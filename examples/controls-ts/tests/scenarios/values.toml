@@ -1,0 +1,82 @@
+# The controls examples, in Rust and in TypeScript, pass the same scenarios.
+# Values: tessoa puts a number on the control's step and in its range before
+# the page hears it; the page keeps it, and the summary shows it.
+name = "Values stop on their step, stay in their range, and follow the keys"
+
+[[steps]]
+open-page = "controls"
+expect-value = [
+  { key = "dark", value = false },
+  { key = "width", value = 1920 },
+  { key = "volume", value = 40 },
+  { key = "level", value = 0.4 },
+  { key = "busy", value = "indeterminate" },
+  { key = "color", value = "#3b82f6" },
+  { key = "day", value = "2026-10-15" },
+]
+
+[[steps]]
+click = "dark"
+expect-value = { key = "dark", value = true }
+
+[[steps]]
+set = { on = "width", value = 2560.4 }
+expect-value = { key = "width", value = 2560 }
+expect-text = { key = "summary", contains = "2560 px" }
+
+[[steps]]
+set = { on = "width", value = 20000 }
+expect-value = { key = "width", value = 10000 }
+
+[[steps]]
+set = { on = "volume", value = 75 }
+expect-value = [{ key = "volume", value = 75 }, { key = "level", value = 0.75 }]
+
+[[steps]]
+set = { on = "color", value = "#FF0000" }
+expect-value = { key = "color", value = "#ff0000" }
+expect-text = { key = "summary", contains = "#ff0000" }
+
+[[steps]]
+set = { on = "day", value = "2026-12-24" }
+expect-text = { key = "summary", contains = "2026-12-24" }
+
+[[steps]]
+choose = { on = "format", option = "eu" }
+expect-text = { key = "summary", contains = "24.12.2026" }
+
+[[steps]]
+set = { on = "day", value = "" }
+expect-value = { key = "day", value = "" }
+expect-text = { key = "summary", contains = "No day" }
+
+# The keys of a slider and a number input that have the focus.
+[[steps]]
+focus = "volume"
+
+[[steps]]
+key = "ArrowRight"
+expect-value = { key = "volume", value = 76 }
+
+[[steps]]
+key = "PageUp"
+expect-value = { key = "volume", value = 86 }
+
+[[steps]]
+key = "End"
+expect-value = { key = "volume", value = 100 }
+
+[[steps]]
+focus = "width"
+
+[[steps]]
+key = "ArrowDown"
+expect-value = { key = "width", value = 9999 }
+
+# Space turns the switch over when it has the focus.
+[[steps]]
+focus = "dark"
+
+[[steps]]
+key = "Space"
+expect-value = { key = "dark", value = false }

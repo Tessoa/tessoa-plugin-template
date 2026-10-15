@@ -1,0 +1,14 @@
+[plugin]
+id = "com.example.controls-ts"
+name = "Controls"
+version = "0.1.0"
+api = "tessoa:plugin@0.2.0"
+
+[entry]
+kind = "js"
+file = "dist/plugin.js"
+
+[[pages]]
+id = "controls"
+title = "Controls"
+icon = "sliders"

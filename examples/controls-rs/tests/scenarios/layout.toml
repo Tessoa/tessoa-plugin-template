@@ -1,0 +1,77 @@
+# The controls examples, in Rust and in TypeScript, pass the same scenarios.
+# Rich text, a fold, and a popup that covers the page while it is open.
+name = "Links, a fold and a popup that renames"
+
+[[steps]]
+open-page = "controls"
+expect-value = [{ key = "more", value = false }, { key = "rename-popup", value = false }]
+expect-tree-contains = [
+  { key = "busy", tip = "A bar without a value moves" },
+  { kind = "image", key = "logo" },
+]
+
+# A link to a web address goes to tessoa, which asks the user first; the page
+# hears nothing of it.
+[[steps]]
+click-link = { on = "about", link = "a website" }
+expect-open-url = "https://example.com/"
+expect-text = { key = "status", text = "" }
+
+# A link with an action goes to the page, which opens the fold.
+[[steps]]
+click-link = { on = "about", link = "more" }
+expect-value = { key = "more", value = true }
+
+[[steps]]
+click = "beta"
+expect-tree-contains = { key = "beta", checked = true }
+
+# A click on the fold's title closes it; what is inside cannot be reached then.
+[[steps]]
+click = "more"
+expect-value = { key = "more", value = false }
+
+# The popup opens from a button, holds the focus, and renames.
+[[steps]]
+click = "rename"
+expect-value = [{ key = "rename-popup", value = true }, { key = "name-field", value = "Untitled" }]
+
+[[steps]]
+key = "Tab"
+expect-focus = "name-field"
+
+[[steps]]
+key = "Shift+Tab"
+expect-focus = "save-rename"
+
+[[steps]]
+type = { into = "name-field", text = "Holiday photos" }
+
+[[steps]]
+submit = "name-field"
+expect-value = { key = "rename-popup", value = false }
+expect-text = [{ key = "name", text = "Holiday photos" }, { key = "status", text = "Renamed to Holiday photos" }]
+expect-tree-contains = { key = "summary", count = 1 }
+
+# Escape closes the popup, and nothing changes.
+[[steps]]
+click = "rename"
+
+[[steps]]
+type = { into = "name-field", text = "Something else" }
+
+[[steps]]
+key = "Escape"
+expect-value = { key = "rename-popup", value = false }
+expect-text = { key = "name", text = "Holiday photos" }
+
+# Save takes what the field holds.
+[[steps]]
+click = "rename"
+
+[[steps]]
+type = { into = "name-field", text = "Trip" }
+
+[[steps]]
+click = "save-rename"
+expect-text = { key = "name", text = "Trip" }

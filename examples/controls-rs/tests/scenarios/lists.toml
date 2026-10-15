@@ -1,0 +1,106 @@
+# The controls examples, in Rust and in TypeScript, pass the same scenarios.
+# A list of 500 rows, a table the page sorts, and a tree whose folders open.
+# tessoa shows 20 rows of each on its screen and holds the selection; the
+# page hears what the user selected and keeps it.
+name = "Rows are selected, sorted, ticked and opened"
+
+[[steps]]
+open-page = "controls"
+expect-rows = [
+  { on = "items", count = 500, ids = ["i001", "i002"], texts = ["Item 001", "Item 002"] },
+  { on = "planets", count = 8, texts = ["Earth", "Jupiter", "Mars", "Mercury"] },
+  { on = "files", count = 3, ids = ["docs", "pics", "todo"] },
+]
+
+[[steps]]
+click-row = { on = "items", row = "i003" }
+expect-selected = { on = "items", ids = ["i003"] }
+expect-text = { key = "picked", text = "Item 003" }
+
+[[steps]]
+click-row = { on = "items", row = "i006", shift = true }
+expect-selected = { on = "items", ids = ["i003", "i004", "i005", "i006"] }
+expect-text = { key = "picked", text = "4 items: Item 003, Item 004, Item 005, …" }
+
+[[steps]]
+click-row = { on = "items", row = "i004", ctrl = true }
+expect-text = { key = "picked", text = "3 items: Item 003, Item 005, Item 006" }
+
+# The list has the focus after a click: the arrows move the selection.
+[[steps]]
+key = "ArrowDown"
+expect-selected = { on = "items", ids = ["i005"] }
+
+[[steps]]
+key = "Shift+ArrowDown"
+expect-selected = { on = "items", ids = ["i005", "i006"] }
+
+[[steps]]
+key = "Enter"
+expect-text = { key = "status", text = "Opened Item 006" }
+
+# The list's menu acts on the selection: the page empties it.
+[[steps]]
+menu = { on = "items", item = "none" }
+expect-selected = { on = "items", ids = [] }
+expect-text = { key = "status", text = "Selected none" }
+
+# Only the rows on the screen can be clicked: scroll first.
+[[steps]]
+scroll = { on = "items", row = 480 }
+expect-rows = { on = "items", from = 480, ids = ["i481", "i482"] }
+
+[[steps]]
+activate-row = { on = "items", row = "i500" }
+expect-text = { key = "status", text = "Opened Item 500" }
+
+[[steps]]
+key = "Ctrl+a"
+expect-text = { key = "picked", text = "500 items: Item 001, Item 002, Item 003, …" }
+
+# The page sorts the table; a second click on the header turns the order round.
+[[steps]]
+sort = { on = "planets", column = "moons" }
+expect-rows = { on = "planets", texts = ["Mercury", "Venus", "Earth", "Mars", "Neptune", "Uranus", "Jupiter", "Saturn"] }
+
+[[steps]]
+sort = { on = "planets", column = "moons" }
+expect-rows = { on = "planets", texts = ["Saturn", "Jupiter", "Uranus", "Neptune", "Mars", "Earth", "Venus", "Mercury"] }
+
+[[steps]]
+check-row = { on = "planets", row = "mars", column = "seen" }
+expect-rows = { on = "planets", from = 4, cells = [["Mars", "2", "[x]"]] }
+
+[[steps]]
+row-action = { on = "planets", row = "saturn", action = "info" }
+expect-text = { key = "status", text = "Saturn has 146 moons" }
+
+# The tree: the page opens a folder, and its rows follow.
+[[steps]]
+expand = { on = "files", row = "docs" }
+expect-rows = { on = "files", count = 5, ids = ["docs", "docs/2026", "docs/report", "pics", "todo"] }
+
+[[steps]]
+expand = { on = "files", row = "docs/2026" }
+expect-rows = { on = "files", count = 6, ids = ["docs", "docs/2026", "docs/2026/plan", "docs/report", "pics", "todo"] }
+
+# Left closes the open row that has the focus; Right opens it again.
+[[steps]]
+click-row = { on = "files", row = "docs" }
+
+[[steps]]
+key = "ArrowLeft"
+expect-rows = { on = "files", count = 3 }
+
+[[steps]]
+key = "ArrowRight"
+expect-rows = { on = "files", count = 6 }
+
+[[steps]]
+activate-row = { on = "files", row = "todo" }
+expect-text = { key = "status", text = "Opened To do.txt" }
+
+# The split keeps where the user put its bar.
+[[steps]]
+drag-split = { on = "split", ratio = 0.6 }
+expect-value = { key = "split", value = 0.6 }

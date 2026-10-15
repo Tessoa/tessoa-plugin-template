@@ -1,0 +1,51 @@
+# The controls examples, in Rust and in TypeScript, pass the same scenarios.
+# Choices: the page shows the option the user chose, and the summary below
+# shows it too.
+name = "Choices show what the user chose, by click and by key"
+
+[[steps]]
+open-page = "controls"
+expect-value = [
+  { key = "format", value = "iso" },
+  { key = "size", value = "m" },
+  { key = "view", value = "list" },
+  { key = "tab", value = "general" },
+]
+expect-tree-contains = { key = "format", tip = "How the summary writes the day" }
+
+[[steps]]
+choose = { on = "format", option = "us" }
+expect-value = { key = "format", value = "us" }
+expect-text = { key = "summary", contains = "10/15/2026" }
+
+[[steps]]
+choose = { on = "size", option = "l" }
+expect-text = { key = "summary", contains = "Large" }
+
+[[steps]]
+choose = { on = "tab", option = "advanced" }
+expect-text = { key = "tab-text", contains = "Advanced" }
+
+# The keys of a choice that has the focus: Up and Down in a radio group, Left
+# and Right in segmented buttons and tabs.
+[[steps]]
+focus = "size"
+
+[[steps]]
+key = "ArrowUp"
+expect-value = { key = "size", value = "m" }
+
+[[steps]]
+focus = "view"
+
+[[steps]]
+key = "ArrowRight"
+expect-value = { key = "view", value = "grid" }
+
+[[steps]]
+focus = "tab"
+
+[[steps]]
+key = "ArrowLeft"
+expect-value = { key = "tab", value = "general" }
+expect-text = { key = "tab-text", contains = "only the row of tabs" }

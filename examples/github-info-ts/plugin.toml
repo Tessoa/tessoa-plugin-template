@@ -1,0 +1,17 @@
+[plugin]
+id = "com.example.github-info"
+name = "GitHub info"
+version = "0.1.0"
+api = "tessoa:plugin@0.2.0"
+
+[entry]
+kind = "js"
+file = "dist/plugin.js"
+
+[[pages]]
+id = "github"
+title = "GitHub"
+icon = "info"
+
+[permissions]
+net = ["https://api.github.com"]

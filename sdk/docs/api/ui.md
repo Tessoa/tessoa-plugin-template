@@ -24,7 +24,7 @@ Permission: none.
 
 ```
 wit  confirm: func(title: string, body: string, ok-label: string, cancel-label: string) -> bool
-rust tessoa_plugin_sdk::ui::confirm(title: &str, body: &str, ok_label: &str, cancel_label: &str) -> bool
+rust tessoa_plugin_sdk::ui::confirm_with(title: &str, body: &str, ok_label: &str, cancel_label: &str) -> bool   (ui::confirm(title, body) has the labels OK and Cancel)
 ts   tessoa.ui.confirm(title: string, body: string, okLabel?: string, cancelLabel?: string): Promise<boolean>
 ```
 
@@ -40,7 +40,7 @@ Permission: none.
 
 ```
 wit  confirm-list: func(title: string, body: string, items: list<string>, ok-label: string, cancel-label: string) -> bool
-rust tessoa_plugin_sdk::ui::confirm_list(title: &str, body: &str, items: &[String], ok_label: &str, cancel_label: &str) -> bool
+rust tessoa_plugin_sdk::ui::confirm_list_with(title: &str, body: &str, items: &[String], ok_label: &str, cancel_label: &str) -> bool   (ui::confirm_list(title, body, items) has the labels OK and Cancel)
 ts   tessoa.ui.confirmList(title: string, body: string, items: string[], okLabel?: string, cancelLabel?: string): Promise<boolean>
 ```
 
@@ -59,5 +59,36 @@ ts   tessoa.ui.language(): string
 
 The language tessoa shows its interface in, as a short code such as
 `en`, `zh`, `ja` or `de`. Use it to pick the plugin's own texts.
+
+Permission: none.
+
+### open-url
+
+```
+wit  open-url: func(url: string) -> result<_, string>
+rust tessoa_plugin_sdk::ui::open_url(url: &str) -> Result<(), String>
+ts   tessoa.ui.openUrl(url: string): void
+```
+
+Offer to open a web address in the user's browser. tessoa shows the
+whole address and opens it only when the user agrees; the address
+need not be declared anywhere. Only `http` and `https` addresses are
+accepted, and only while the plugin handles something the user just
+did: a command, or a click, a key or a menu choice on a page. At
+other times, and while the plugin's previous offer is still on
+screen, the call fails with the reason.
+
+Permission: none.
+
+### open-settings
+
+```
+wit  open-settings: func()
+rust tessoa_plugin_sdk::ui::open_settings()
+ts   tessoa.ui.openSettings(): void
+```
+
+Open the plugin's page in tessoa's settings, where the settings the
+manifest declares are. Does nothing for a plugin without settings.
 
 Permission: none.

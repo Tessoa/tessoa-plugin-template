@@ -12,8 +12,9 @@ Kit version: see `sdk/VERSION`. Interface: see `api` in `plugin.toml`.
 tessoa runs each plugin in a separate runner process, inside a WebAssembly sandbox.
 The plugin never sees file paths and has no file system, network or process access of
 its own. It receives handles for the files the user selected and asks tessoa to act
-on them. Anything beyond the basics must be declared in `plugin.toml` and is shown to
-the user, who confirms it in tessoa.
+on them; it reaches only the websites its manifest lists, through the runner. Anything
+beyond the basics must be declared in `plugin.toml` and is shown to the user, who
+confirms it in tessoa.
 
 ## Steps
 
@@ -34,10 +35,11 @@ the user, who confirms it in tessoa.
    `tessoa-plugin init --lang ts|rust --id <reverse.domain.id> --name "<Name>"`.
    It keeps the skeleton you chose and deletes the other one.
 4. Run `tessoa-plugin doctor`. Fix whatever it marks FAIL before going on.
-5. Declare the commands or pages and their permissions in `plugin.toml` (see
-   `sdk/docs/guide/manifest.md`). Ask for the fewest permissions that work. The
-   skeleton's `count-selected` command, its code and its scenario are placeholders;
-   replace them. For a page, read the Pages section below first.
+5. Declare the commands, pages, columns or settings and their permissions in
+   `plugin.toml` (see `sdk/docs/guide/manifest.md`). Ask for the fewest permissions
+   that work. The skeleton's `count-selected` command, its code and its scenario are
+   placeholders; replace them. For a page, read the Pages section below first; for a
+   list, a long piece of work or a website, the section after it.
 6. Write the plugin in `src/`.
 7. Write scenarios in `tests/scenarios/*.toml` with fixtures in `tests/fixtures`
    (see `sdk/docs/guide/testing.md`): for a command, which files and answers go in
@@ -68,7 +70,7 @@ be found or is too old, say so; do not work around it.
 | `tessoa-plugin check` | Report what the manifest gets wrong without stopping the plugin: a theme, a page icon. |
 | `tessoa-plugin build` | Build and audit. |
 | `tessoa-plugin test` | Run the scenarios. |
-| `tessoa-plugin render [--page <id>] [--steps <scenario>]` | Print a page as text, freshly opened or after the steps of a scenario. |
+| `tessoa-plugin render [--page <id>] [--steps <scenario>] [--rows 100..140]` | Print a page as text, freshly opened or after the steps of a scenario; a list's rows on screen, or those rows. |
 | `tessoa-plugin run --command <id> --file <path> --answer ok` | Try one command on real files. The files are really renamed; use copies. |
 | `tessoa-plugin package` | Write the zip. |
 | `tessoa-plugin install` | Hand the project to tessoa. |
@@ -79,14 +81,15 @@ given only by the user, inside tessoa.
 
 ## Rules the sandbox enforces
 
-- No paths, no file system, no network, no threads, no processes. Do not try to
-  reach them through the language's standard library; the runner does not link them.
+- No paths, no file system, no threads, no processes, and no network except
+  `tessoa.net` (Rust `net`) to the websites `plugin.toml` lists. Do not try to reach
+  them through the language's standard library; the runner does not link them.
 - Only the functions named in `sdk/docs/api/` exist. Read the page for an interface
   before using it; do not guess names.
 - A function used without the matching permission in `plugin.toml` fails the audit
   at build time and the call fails at run time.
-- A command that runs long or loops is stopped by the runner. Keep work small and
-  do not poll.
+- A command or a page's handler that runs long or loops is stopped by the runner.
+  Keep it small and do not poll; longer work runs as a task (below).
 - In a command, dialogs block until the user answers. Ask once for a batch, not
   once per file. A page never waits for a dialog.
 - File changes are requests: tessoa applies its own conflict handling, recycle bin,
@@ -107,8 +110,13 @@ command for an action on the selected files. A plugin can have both.
   implement `Page`, and use `export_pages!` instead of `export!`.
 - Read `sdk/docs/guide/pages.md` before writing the page, and start from the
   closest example: `examples/calculator-ts` and `calculator-rs` (buttons, keys, the
-  clipboard; the TypeScript one has a theme), `examples/shelf-ts` (files),
-  `examples/kanban-ts` (cards to drag, a menu, a question before deleting).
+  clipboard; the TypeScript one has a theme), `examples/controls-ts` and
+  `controls-rs` (every control: choices, values, colour, date, image, rich text,
+  grid, fold, popup, split, list, table, tree), `examples/shelf-ts` (files),
+  `examples/kanban-ts` (cards to drag, a menu, a question before deleting),
+  `examples/csv-table-ts` (a picked file in a table that sorts, rows copied),
+  `examples/json-tree-ts` (a picked file as a tree with `TreeModel`),
+  `examples/github-info-ts` (a website asked from a page, and its errors).
 - `render` describes the whole page every time and changes nothing; handlers
   only change the state. After every event and every command the SDK renders
   every open page again. Do not update another page by hand.
@@ -120,18 +128,27 @@ command for an action on the selected files. A plugin can have both.
   a node without a key sends no events at all.
 - Declare the keys the page handles, written the way they type: `8`, `+`,
   `Enter`, `Ctrl+c`. Write `Ctrl+c` and `Meta+c` for a shortcut.
+- A control shows the value the page gives it: a checkbox, a switch, a choice, a
+  number, a slider, a colour, a date, a fold, a popup. Keep the user's change in the
+  state in `onChange` or `onToggle` (Rust: `Event::Choose`, `Value`, `Toggle` and so
+  on), or the control goes back to the old value.
 - A text field keeps what the user typed until the page gives it a different
   value. To empty a field after a submit, keep its text in the state from
   `onInput` (Rust: `Event::Input`) and set it to `""`.
+- Open a popup from a button the user clicks, and close it in `onDismiss` by
+  setting `open` to false. A popup that is open when the page opens covers the page.
+- Pictures for `<image src="images/...">` go in the project's `images` folder:
+  `tessoa-plugin package` includes that folder, and nothing else of the kind.
 - A button or icon button with a `menu` opens the menu on a click and sends no
   click: give a "more" button the menu and no `onClick`.
 - Ask the user as little as possible. In a page, `await tessoa.ui.confirm(...)`
   (TypeScript) or `pages::confirm` (Rust) does not hold the page up; the answer
   arrives later, and the data may have changed by then.
-- File references come only from the user: files dropped on a drop zone, or files
-  a command kept with `files.keep`. Copy, move and trash are requests tessoa
-  carries out; the outcome arrives in `onTransferDone` (Rust:
-  `Event::TransferDone`).
+- File references come only from the user: files dropped on a drop zone, files
+  a command kept with `files.keep`, files picked with `pickFiles`, files created
+  with `createFile` in a folder picked with `pickFolder`
+  (`sdk/docs/guide/files.md`). Copy, move and trash are requests tessoa carries
+  out; the outcome arrives in `onTransferDone` (Rust: `Event::TransferDone`).
 - All pages of the plugin share one instance: a variable outside the page state
   is shared by every page and lost when the plugin restarts. Data every page
   shows goes in the storage (`tessoa.storage`, Rust `storage`); what one tab needs
@@ -152,19 +169,61 @@ command for an action on the selected files. A plugin can have both.
   (see `sdk/docs/guide/pages.md`, Colours). If you write one, run
   `tessoa-plugin check` and fix every `problem:` line it prints.
 - Test the page with page scenarios (`[[steps]]` in `tests/scenarios`; see
-  `sdk/docs/guide/testing.md`): open the page, click, type, drop, answer, restart,
-  and check the page after each step. Cover every flow the user can take, a restart
-  included.
+  `sdk/docs/guide/testing.md`): open the page, click, type, choose, set values,
+  select rows, drop, answer, restart, and check the page after each step. Cover
+  every flow the user can take, a restart included. A step refuses what the user
+  could not do, such as clicking a row that is not on the screen or a node behind
+  an open popup: change the steps, not the page.
 - `tessoa-plugin render` prints the page as text, one line per node. Run it, with
   `--steps <scenario>`, whenever a check fails or the page may not look as
   intended.
+
+## Lists, long work and websites
+
+Three rules that decide how the plugin is built. Follow them from the start:
+changing course later means rewriting the page.
+
+- **More than two hundred items, or items the user selects: a list, a table or a
+  tree.** Not a column of nodes. Give the node a key, `count` and `row={(i) => ...}`
+  (Rust: `list(n)` and `Page::rows`); tessoa asks only for the rows on screen,
+  holds the selection, and tells the page in `onSelect`. Build each row's id from
+  the item's own id. Sorting is the page's: sort the data in `onSort` and render
+  `sort`. For a tree use `TreeModel`. Read `sdk/docs/guide/lists.md`.
+- **Work that takes longer than about a second: a task.** Hashing files,
+  converting, fetching many pages, writing a report. Define it with
+  `tessoa.tasks.define` (Rust: a `Task` listed in `export!` or `export_pages!`),
+  start it with `tessoa.tasks.start`, and show its handle's `progress` and `state`
+  on the page. The task runs in another instance of the plugin: pass what it needs
+  in its input. Report progress after every item and check `task.cancelled`
+  between items. After `await task.done` a page's handler cannot ask the user or
+  go to the network any more: ask before, in a later handler, or in the task. Read
+  `sdk/docs/guide/tasks.md`; `examples/hash-files-rs` is a command whose task hashes
+  the selected files and saves a report in a folder the user picks.
+- **A website: list it first.** Put it under `[permissions] net` in `plugin.toml`
+  (`net = ["https://api.example.com"]`) before writing the code that calls it; a
+  request to anywhere else fails with `not-allowed`. Use `tessoa.net.fetch` (Rust
+  `net::fetch`, or `net::fetch_start` in a page). Scenarios never go to the network:
+  answer the requests with `[[net]]` entries. A plugin that reads files and connects
+  to websites is shown to the user with a warning; ask for both only when it needs
+  both. Read `sdk/docs/guide/network.md`; `examples/github-info-ts` asks GitHub's API
+  from a page.
+
+Columns for tessoa's file list are in `sdk/docs/guide/columns.md`
+(`examples/image-size-column-rs`), settings the user changes in tessoa in
+`sdk/docs/guide/settings.md` (`examples/hash-files-rs` has one).
 
 ## Where to look
 
 | Need | File |
 |---|---|
 | Every function, per interface | `sdk/docs/api/README.md` and the pages it links |
-| Pages: the nodes, keys, files, both languages | `sdk/docs/guide/pages.md` |
+| Pages: the nodes, controls, keys, files, both languages | `sdk/docs/guide/pages.md` |
+| Lists, tables, trees, rows, selection, `TreeModel` | `sdk/docs/guide/lists.md` |
+| Tasks: long work, progress, cancelling | `sdk/docs/guide/tasks.md` |
+| Connecting to websites | `sdk/docs/guide/network.md` |
+| Columns in tessoa's file list | `sdk/docs/guide/columns.md` |
+| Settings tessoa shows and keeps | `sdk/docs/guide/settings.md` |
+| Picking files, creating files in a picked folder | `sdk/docs/guide/files.md` |
 | The manifest keys | `sdk/docs/guide/manifest.md` |
 | Permissions and what each allows | `sdk/docs/guide/permissions.md` |
 | Scenario files | `sdk/docs/guide/testing.md` |

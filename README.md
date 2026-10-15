@@ -3,10 +3,12 @@
 [中文](README.zh-CN.md)
 
 A starting point for a tessoa plugin written in TypeScript or Rust. A plugin
-adds commands to the tessoa context menu, or pages: whole tabs such as a
-calculator or a task board, which tessoa draws in its own style. It runs in a
-sandbox: it sees the files the user selected but never their paths, and it
-can only ask tessoa to act on them.
+adds commands to the tessoa context menu, pages (whole tabs such as a
+calculator or a task board, which tessoa draws in its own style), columns to
+tessoa's file list and settings that tessoa keeps for it; long work runs in
+the background as a task. It runs in a sandbox: it sees the files the user
+selected but never their paths, it can only ask tessoa to act on them, and it
+reaches only the websites it lists.
 
 The template is laid out so that a coding assistant can do the whole job from
 a one-sentence request. `AGENTS.md` sends it to the manual in `sdk/`, the
