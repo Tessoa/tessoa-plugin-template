@@ -34,7 +34,7 @@ files = ["read-selected", "rename-selected"]
 | `id` | yes | Globally unique, reverse-domain style. Lower-case letters, digits, `.`, `_` and `-`; no leading dot, no `..`. It doubles as the directory name once installed. |
 | `name` | yes | Shown to the user. |
 | `version` | yes | `MAJOR.MINOR.PATCH`, optionally followed by `-label`. |
-| `api` | yes | The interface version the plugin was built against, exactly as in the `package` line of `wit/tessoa-plugin.wit`. A runner that does not know the version refuses the plugin. |
+| `api` | yes | The interface version the plugin was built against, exactly as in the `package` line of `wit/tessoa-plugin.wit`. A runner loads plugins built for its own version or an earlier release of the same line (`0.2.0` with a `0.2.1` runner); it refuses a later version and other lines. |
 | `min-host` | no | The oldest tessoa version that may load the plugin. |
 
 ## `[entry]`
