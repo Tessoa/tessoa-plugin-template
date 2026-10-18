@@ -88,6 +88,10 @@ calls `onRowAction(row, action)` (Rust `Event::RowAction { list, row, action
 `Event::RowCheck`) with the new state; the cell shows what the page's next
 rows say, so change the data the cell comes from.
 
+A row action shows its label as a tooltip; an empty label shows no tooltip.
+In a two-line table, `detail` is below the first text cell only, not repeated
+under the other columns. A table without `twoLine` stays single-line.
+
 When rows of a long list are slow to describe, give `rowId={(i) => ...}`
 (Rust: `Page::row_ids`): tessoa asks for ids alone, up to 10,000 at a time,
 when the user selects a range of rows that were never on screen, or all of
@@ -222,7 +226,8 @@ Event::Expand { row, open, .. } => { self.files.expand(&row, open); }
 
 **Children read when they open.** Set the items first, then mark the ones
 whose children come later: `setLazy` and `setChildren` name an item that is
-already in the tree, and do nothing (they return false) for one that is not.
+already in the tree. For an id that is not there, they return false, leave the
+tree unchanged and log a warning naming the method and the missing id.
 When the user opens such an item, `expand` returns true and the page sets its
 children, at once or, when finding them takes long, with a row such as
 "Loading…" first and the real children when a task has found them:

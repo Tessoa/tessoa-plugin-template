@@ -16,6 +16,11 @@ on them; it reaches only the websites its manifest lists, through the runner. An
 beyond the basics must be declared in `plugin.toml` and is shown to the user, who
 confirms it in tessoa.
 
+The plugins in `examples/` are references to copy from. None of them is the
+user's plugin or is installed anywhere: when the user asks for a plugin that an
+example already does, build it in this project all the same, starting from that
+example.
+
 ## Steps
 
 1. Pick the language. TypeScript is enough for most plugins that rename, filter or
@@ -23,7 +28,9 @@ confirms it in tessoa.
 2. Run the setup script for that language. On Windows:
    `powershell -ExecutionPolicy Bypass -File scripts/setup.ps1 -Lang ts` (or
    `-Lang rust`); elsewhere: `bash scripts/setup.sh --lang ts` (or `--lang rust`).
-   It installs only what is missing, `tessoa-plugin` included, and prints the
+   Run it without asking the user first: it is part of the work, installs for
+   the current user only, needs no administrator rights, and prints every
+   setting it changes. It installs only what is missing, `tessoa-plugin` included, and prints the
    full path of every tool. A terminal that was open before the setup does not
    find what it just installed: when that is the case, the script ends with a
    line that adds the tools to the terminal's PATH. Run that line first. If
@@ -33,8 +40,11 @@ confirms it in tessoa.
    path also works.
 3. If `skeleton/` still exists, run
    `tessoa-plugin init --lang ts|rust --id <reverse.domain.id> --name "<Name>"`.
-   It keeps the skeleton you chose and deletes the other one.
-4. Run `tessoa-plugin doctor`. Fix whatever it marks FAIL before going on.
+   It keeps the skeleton you chose and deletes the other one. Do not set the
+   project up by hand instead, by writing `plugin.toml` or copying a skeleton
+   or an example to the root.
+4. Run `tessoa-plugin doctor`. Fix whatever it marks FAIL before going on; it
+   fails while `skeleton/` is left.
 5. Declare the commands, pages, columns or settings and their permissions in
    `plugin.toml` (see `sdk/docs/guide/manifest.md`). Ask for the fewest permissions
    that work. The skeleton's `count-selected` command, its code and its scenario are

@@ -6,6 +6,14 @@ use std::collections::{HashMap, HashSet};
 
 use crate::pages::{Expander, Row};
 
+fn missing_item(method: &str, id: &str) {
+    let message = format!("TreeModel.{method}: no item {id:?}; set roots or children before using this id");
+    #[cfg(target_arch = "wasm32")]
+    crate::log::warn(&message);
+    #[cfg(not(target_arch = "wasm32"))]
+    eprintln!("{message}");
+}
+
 /// The rows of a [`crate::pages::tree`] node, worked out from items.
 ///
 /// Which rows a tree shows depends on which of its items are open, and
@@ -132,6 +140,7 @@ impl<T> TreeModel<T> {
     /// item `parent`.
     pub fn set_children<S: Into<String>>(&mut self, parent: &str, items: impl IntoIterator<Item = (S, T)>) -> bool {
         let Some(&p) = self.ids.get(parent) else {
+            missing_item("set_children", parent);
             return false;
         };
         let placed = self.place(Some(p), items);
@@ -147,6 +156,7 @@ impl<T> TreeModel<T> {
     /// Returns false when the tree has no item `id`.
     pub fn set_lazy(&mut self, id: &str) -> bool {
         let Some(&s) = self.ids.get(id) else {
+            missing_item("set_lazy", id);
             return false;
         };
         if let Some(old) = self.item_mut(s).children.take() {

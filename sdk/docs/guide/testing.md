@@ -328,6 +328,13 @@ field with the focus takes every key except Tab. Other keys go to the page
 when it declares them; Tab goes to the page only when it declares Tab and no
 control has the focus.
 
+On a button or an icon button with a menu, Enter and Space open the menu
+without sending a click or a page key. The menu starts with no item highlighted.
+Up and Down (also ArrowUp and ArrowDown), Home and End move among enabled
+items; Enter or Space chooses the highlighted item. Escape or another key
+closes the menu and is consumed, without reaching the page or closing a popup
+behind it. Changing pages or restarting closes the menu as well.
+
 File references are numbered 1, 2, 3 and so on, in the order the plugin
 first receives each file, dropped or kept by a command; a file keeps its
 number until the plugin releases it. A shelf that keys its rows by reference
