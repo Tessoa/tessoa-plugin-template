@@ -11,6 +11,10 @@ version tessoa-plugin 0.1.0
 version node 22.23.3
 version rustup 1.29.1
 
+file tessoa-plugin-0.1.0-aarch64-apple-darwin.zip 7ead4826d64e43f31e14da27d4688e321ae9440375858d4dcbb7e9bb5592a1ff
+file tessoa-plugin-0.1.0-x86_64-apple-darwin.zip 4a6729e7962b1745ec88ecfab1c54f8117257973759c3ce16497d2b61556ba3f
+file tessoa-plugin-0.1.0-x86_64-pc-windows-msvc.zip 706b63bf286cb1f70bbdd612f8191e19cb3b940439fcb3448af8a68e6b2b03d6
+file tessoa-plugin-0.1.0-x86_64-unknown-linux-gnu.zip 85aa8f1737136b36314114ed28221968c7bfb7613aca53c364d444498cdc2441
 file node-v22.23.3-win-x64.zip 2b0ff57b049cda1bbcea2240eec20467018713c1efe1f7360c2681859b90ed71
 file node-v22.23.3-darwin-arm64.tar.gz 23b25245dcfb9af7262f8ff142e9e2e0af025368117329e7a7458a51e5922f53
 file node-v22.23.3-darwin-x64.tar.gz 8a677b0219178efd6eb0e475457c4afb452b521a92f6e67845a73bd85727f2a8
