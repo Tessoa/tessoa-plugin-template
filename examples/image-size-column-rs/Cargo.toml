@@ -4,6 +4,7 @@ description = "Example plugin: a column with the width and height of PNG and JPE
 edition = "2024"
 version = "0.1.0"
 publish = false
+license = "MIT"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

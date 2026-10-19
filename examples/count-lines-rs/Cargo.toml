@@ -4,6 +4,7 @@ description = "Example plugin: count the lines of the selected text files"
 edition = "2024"
 version = "0.1.0"
 publish = false
+license = "MIT"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

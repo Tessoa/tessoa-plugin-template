@@ -13,6 +13,7 @@
 *.lock text eol=lf
 # examples/ comes from the SDK too, and is compared with it byte for byte.
 *.svg text eol=lf
+LICENSE text eol=lf
 sdk/** text eol=lf
 
 # Scenarios compare fixture files byte for byte, so they are never converted.

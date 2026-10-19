@@ -37,9 +37,10 @@ tessoa-plugin install
 |---|---|
 | `AGENTS.md` | 编程助手的起点，指向 `sdk/AGENTS.md`。 |
 | `skeleton/` | TypeScript 与 Rust 两套起点，`init` 之后就没了。 |
-| `examples/` | 完整的插件，各自带测试。 |
+| `examples/` | 完整的插件，各自带测试和自己的 `LICENSE`。 |
 | `sdk/` | SDK 套件：说明书、接口定义、接口参考、TypeScript 声明和 Rust SDK。不要改。 |
 | `scripts/` | 装环境脚本。 |
+| `LICENSE` | `sdk/` 以外所有文件的 MIT 许可。 |
 
 仓根还有几个一行的文件，用的是某些工具会找的文件名，内容都是让它们去读 `AGENTS.md`。
 
@@ -59,29 +60,10 @@ tessoa-plugin upgrade            # 加 --check 只查看不升级
 
 ## 许可
 
-模板里的骨架、例子和装环境脚本归你随便用。它们按下面的 MIT No Attribution 许可发布：用它们做出来的插件，
-使用、修改、发布、出售都不用问任何人，也不用保留任何声明。
+模板里的骨架、例子和装环境脚本按 `LICENSE` 里的 MIT 许可发布，每个例子目录里也各有一份同样的 `LICENSE`。用它们做出来的插件，
+使用、修改、发布、出售都不用问任何人，只要从这里拿走的代码保留那份版权与许可声明。
 
 `sdk/` 下的文件是 tessoa 插件 SDK，不在这份许可之内，另有自己的许可，见 `sdk/LICENSE.zh-CN.md`，它也覆盖 `tessoa-plugin`
 工具。简单说：你可以用它们构建插件，发布、出售这些插件（包括构建时放进插件的 SDK 部分），把 `sdk/` 留在你的插件仓库里
 （私有、公开都行），也可以制作帮别人做插件的工具；不用问任何人，也不用保留任何声明。不可以单独分发 SDK、分发这个工具，
 也不可以做让人在 tessoa 之外使用 tessoa 插件的东西。
-
-```
-MIT No Attribution
-
-Copyright 2026 Chengdu Tianji Engineering Management Service Co., Ltd.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software is furnished to do so.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-```

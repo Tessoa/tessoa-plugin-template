@@ -48,9 +48,10 @@ in its own window.
 |---|---|
 | `AGENTS.md` | Where a coding assistant starts. Points to `sdk/AGENTS.md`. |
 | `skeleton/` | The TypeScript and the Rust starting point. Gone after `init`. |
-| `examples/` | Complete plugins, each with its own tests. |
+| `examples/` | Complete plugins, each with its own tests and its own `LICENSE`. |
 | `sdk/` | The SDK kit: the manual, the interface definition, the API reference, the TypeScript declarations and the Rust SDK. Do not edit. |
 | `scripts/` | The setup scripts. |
+| `LICENSE` | The MIT licence of everything outside `sdk/`. |
 
 A few one-line files at the root, under the names some tools look for, point
 those tools to `AGENTS.md`.
@@ -74,10 +75,11 @@ and checksums are verified before anything changes. Code outside
 
 ## Licence
 
-The skeletons, the examples and the setup scripts in this template are yours
-to use. They are released under the MIT No Attribution licence below: a plugin
-made from them can be used, changed, published and sold without asking anyone
-and without keeping any notice.
+The skeletons, the examples and the setup scripts in this template are
+released under the MIT licence in `LICENSE`, and each example carries the same
+licence in its own `LICENSE`. A plugin made from them can be used, changed,
+published and sold without asking anyone, as long as the copyright and licence
+notice stays with the code taken from here.
 
 The files under `sdk/` are the tessoa plugin SDK. They are not covered by that
 licence; they come with their own, in `sdk/LICENSE.md`, which also covers the
@@ -87,22 +89,3 @@ keep `sdk/` in your plugin's repository, private or public, and make tools
 that help others build plugins, without asking and without keeping any
 notice. You may not hand out the SDK on its own or the tool at all, or make
 something that runs tessoa plugins outside tessoa.
-
-```
-MIT No Attribution
-
-Copyright 2026 Chengdu Tianji Engineering Management Service Co., Ltd.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software is furnished to do so.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-```

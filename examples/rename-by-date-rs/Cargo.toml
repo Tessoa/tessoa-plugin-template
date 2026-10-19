@@ -4,6 +4,7 @@ description = "Example plugin: rename the selected photos after their capture da
 edition = "2024"
 version = "0.1.0"
 publish = false
+license = "MIT"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

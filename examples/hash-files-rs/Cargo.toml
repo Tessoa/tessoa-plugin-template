@@ -4,6 +4,7 @@ description = "Example plugin: hash the selected files in a task and save a repo
 edition = "2024"
 version = "0.1.0"
 publish = false
+license = "MIT"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

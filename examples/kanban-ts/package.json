@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Example plugin: a task board page",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "build": "tsc --noEmit && esbuild ./src/plugin --bundle --format=iife --global-name=plugin --target=es2020 --jsx=automatic --jsx-import-source=@tessoa/plugin-sdk --outfile=dist/plugin.js"
   },
