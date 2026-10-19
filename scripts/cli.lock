@@ -13,7 +13,9 @@ version rustup 1.29.1
 
 file node-v22.23.3-win-x64.zip 2b0ff57b049cda1bbcea2240eec20467018713c1efe1f7360c2681859b90ed71
 file node-v22.23.3-darwin-arm64.tar.gz 23b25245dcfb9af7262f8ff142e9e2e0af025368117329e7a7458a51e5922f53
+file node-v22.23.3-darwin-x64.tar.gz 8a677b0219178efd6eb0e475457c4afb452b521a92f6e67845a73bd85727f2a8
 file node-v22.23.3-linux-x64.tar.gz 1084aa36196bba4c3a5e69a1ee388a6e4ff729dad09445fbcd434b28fe3c24af
 file rustup-init-1.29.1-x86_64-pc-windows-msvc.exe 6f4bef66261261fcb43131be8720bab817d403a09edec7455c371974b90bdb7e
 file rustup-init-1.29.1-aarch64-apple-darwin ec1b9233e7f72990ecd8e62063fa7f6c3dfc2bec8e97f88bff165f9100ac696a
+file rustup-init-1.29.1-x86_64-apple-darwin 259e2b84274434085163fe8d556510571772cda2aa6d87ca6aa664f57bc644e3
 file rustup-init-1.29.1-x86_64-unknown-linux-gnu dda7234360b7f578ca8b0ddcb80145646fa61a67c1720a5abc7051b35c9fcb71
