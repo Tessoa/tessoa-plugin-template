@@ -44,6 +44,27 @@ tessoa-plugin install
 
 仓根还有几个一行的文件，用的是某些工具会找的文件名，内容都是让它们去读 `AGENTS.md`。
 
+## 独立的示例仓库
+
+每个例子也单独发布成一个仓库，里面带着 SDK 套件和装环境脚本。fork 一个，或者用
+「Use this template」从它建仓，就能从一个已经能用的插件开始改。发布之前先改掉
+`plugin.toml` 里的 `id`。
+
+| 例子 | 做什么 | TypeScript | Rust |
+|---|---|---|---|
+| calculator | 计算器页 | [TypeScript](https://github.com/Tessoa/tessoa-example-calculator-ts) | [Rust](https://github.com/Tessoa/tessoa-example-calculator-rs) |
+| controls | 页里能用的所有控件 | [TypeScript](https://github.com/Tessoa/tessoa-example-controls-ts) | [Rust](https://github.com/Tessoa/tessoa-example-controls-rs) |
+| count-lines | 统计所选文本文件的行数 | [TypeScript](https://github.com/Tessoa/tessoa-example-count-lines-ts) | [Rust](https://github.com/Tessoa/tessoa-example-count-lines-rs) |
+| csv-table | 把 CSV 文件显示成可排序的表格 | [TypeScript](https://github.com/Tessoa/tessoa-example-csv-table-ts) | – |
+| github-info | 从 GitHub API 取仓库的统计数字 | [TypeScript](https://github.com/Tessoa/tessoa-example-github-info-ts) | – |
+| hash-files | 计算所选文件的哈希并保存报告 | – | [Rust](https://github.com/Tessoa/tessoa-example-hash-files-rs) |
+| image-size-column | 在文件列表里加一列图片尺寸 | – | [Rust](https://github.com/Tessoa/tessoa-example-image-size-column-rs) |
+| json-tree | 把 JSON 文件显示成树 | [TypeScript](https://github.com/Tessoa/tessoa-example-json-tree-ts) | – |
+| kanban | 任务看板页 | [TypeScript](https://github.com/Tessoa/tessoa-example-kanban-ts) | – |
+| prefix-date | 在文件名前加上修改日期 | [TypeScript](https://github.com/Tessoa/tessoa-example-prefix-date-ts) | [Rust](https://github.com/Tessoa/tessoa-example-prefix-date-rs) |
+| rename-by-date | 按拍摄日期重命名照片 | [TypeScript](https://github.com/Tessoa/tessoa-example-rename-by-date-ts) | [Rust](https://github.com/Tessoa/tessoa-example-rename-by-date-rs) |
+| shelf | 把常用文件放在手边的暂存页 | [TypeScript](https://github.com/Tessoa/tessoa-example-shelf-ts) | – |
+
 ## 需要什么
 
 - Windows、macOS 或 Linux。

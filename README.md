@@ -56,6 +56,28 @@ in its own window.
 A few one-line files at the root, under the names some tools look for, point
 those tools to `AGENTS.md`.
 
+## Examples as separate repositories
+
+Each example is also published as a repository of its own, with the SDK kit and
+the setup scripts included. Fork one, or create a repository from it with
+"Use this template", to start from a plugin that already works. Change the `id`
+in `plugin.toml` before you publish anything built from it.
+
+| Example | What it does | TypeScript | Rust |
+|---|---|---|---|
+| calculator | A calculator page | [TypeScript](https://github.com/Tessoa/tessoa-example-calculator-ts) | [Rust](https://github.com/Tessoa/tessoa-example-calculator-rs) |
+| controls | Every control a page can show | [TypeScript](https://github.com/Tessoa/tessoa-example-controls-ts) | [Rust](https://github.com/Tessoa/tessoa-example-controls-rs) |
+| count-lines | Count the lines of the selected text files | [TypeScript](https://github.com/Tessoa/tessoa-example-count-lines-ts) | [Rust](https://github.com/Tessoa/tessoa-example-count-lines-rs) |
+| csv-table | A CSV file as a table that sorts | [TypeScript](https://github.com/Tessoa/tessoa-example-csv-table-ts) | – |
+| github-info | A repository's numbers from GitHub's API | [TypeScript](https://github.com/Tessoa/tessoa-example-github-info-ts) | – |
+| hash-files | Hash the selected files and save a report | – | [Rust](https://github.com/Tessoa/tessoa-example-hash-files-rs) |
+| image-size-column | An image size column in the file list | – | [Rust](https://github.com/Tessoa/tessoa-example-image-size-column-rs) |
+| json-tree | A JSON file as a tree | [TypeScript](https://github.com/Tessoa/tessoa-example-json-tree-ts) | – |
+| kanban | A task board page | [TypeScript](https://github.com/Tessoa/tessoa-example-kanban-ts) | – |
+| prefix-date | Put the modification date in front of file names | [TypeScript](https://github.com/Tessoa/tessoa-example-prefix-date-ts) | [Rust](https://github.com/Tessoa/tessoa-example-prefix-date-rs) |
+| rename-by-date | Rename photos after their capture date | [TypeScript](https://github.com/Tessoa/tessoa-example-rename-by-date-ts) | [Rust](https://github.com/Tessoa/tessoa-example-rename-by-date-rs) |
+| shelf | A shelf page that keeps files at hand | [TypeScript](https://github.com/Tessoa/tessoa-example-shelf-ts) | – |
+
 ## Requirements
 
 - Windows, macOS or Linux.
