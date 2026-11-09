@@ -98,6 +98,7 @@ be found or is too old, say so; do not work around it.
 | `tessoa-plugin new <folder> --lang ts\|rust --id <id>` | Create a project without the template. |
 | `tessoa-plugin dev [--no-install] [--test]` | Build and install, then build again after every change, until Ctrl+C. It never finishes by itself, so do not run it where a command has to end. |
 | `tessoa-plugin upgrade` | Replace `sdk/` with the newest kit. Run `--check` to only look. |
+| `tessoa-plugin mcp` | Offer these commands and the reference as an MCP server; started by the coding tool, not by hand. |
 
 When a program runs these commands, add `--json`: stdout is then one JSON document
 with `ok`, `exit` and `problems`, and each problem's `hint` says how to fix it

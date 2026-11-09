@@ -62,6 +62,63 @@ Both are generated from the kit of each SDK release.
 A tool that runs the command-line tool should pass `--json`: each command
 then prints one JSON document with the result and the problems, each with a
 code and a hint on how to fix it. See [cli.md](cli.md#machine-readable-output).
+A tool that speaks MCP can use the server below instead.
 
-An MCP server, which offers the same commands to a tool as MCP tools, is
-planned for a later release.
+## MCP server
+
+`tessoa-plugin mcp` offers the commands, the manual, the guides, the API
+reference and the examples to a coding tool as an MCP server. The tool
+starts it and talks to it on stdin and stdout; nothing else is needed, and it
+works before there is a project. Configure it in your editor or agent as a
+local (stdio) server with the command `tessoa-plugin` and the one argument
+`mcp`. Most tools take a JSON entry of this shape, under a name of your
+choice:
+
+```json
+{
+  "mcpServers": {
+    "tessoa-plugin": {
+      "command": "tessoa-plugin",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+Where that entry goes depends on the tool; see its documentation on MCP
+servers. When `tessoa-plugin` is not on the PATH the tool was started with,
+give the full path of the executable as `command` (the setup scripts put it
+under `~/.tessoa-plugin/bin`).
+
+The tools:
+
+- `new_project`: create a project, as `tessoa-plugin new`.
+- `doctor`: check the toolchain and the project.
+- `check`: validate the manifest and audit the built plugin.
+- `build`: build, then validate.
+- `test`: run the scenarios in `tests/scenarios`.
+- `render`: show a page as text, optionally after the steps of a scenario.
+- `package`: write the zip for installation.
+- `install`: hand the project to the running tessoa, which loads the plugin
+  and asks you in its own window to confirm its permissions the first time.
+- `api_reference`: a page of the API reference, or one function or type.
+- `manifest_reference`: the keys of `plugin.toml`, one section at a time.
+- `guide`: the manual (`manual`) or a guide, by name.
+- `list_examples`: the example plugins, with what each does and the
+  permissions it uses.
+- `example_source`: the files of an example, one at a time.
+
+Each tool that runs a command takes `dir`, the absolute path of the project
+(for `new_project`, of the folder to create): the server is started in a
+folder of the editor's choosing, so it never guesses. Its result is the
+document `--json` writes ([cli.md](cli.md#machine-readable-output)), as the
+tool's structured result, with a short text beside it; a result whose `ok` is
+false is marked as an error, and each problem has its code and hint. The
+reference tools answer from the documents built into the `tessoa-plugin`
+that runs, so they match its release; a project's `sdk/` may be older or
+newer. The same documents are offered as MCP resources, under
+`tessoa-plugin://docs/...` and `tessoa-plugin://examples/...`.
+
+What the commands print for a person goes to stderr, which most tools show
+as the server's log. A build or a test run takes as long as it does on the
+command line, and the server answers one request at a time.

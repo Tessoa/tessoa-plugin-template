@@ -52,6 +52,12 @@ examples).
   skills, or with `--project` into the project; `--check` only reports.
 - `upgrade` prints the sections of `sdk/CHANGELOG.md` between the kit it
   replaces and the one it installs.
+- `mcp` serves the commands to a coding tool as an MCP server on stdin and
+  stdout: `new_project`, `doctor`, `check`, `build`, `test`, `render`,
+  `package` and `install` return the `--json` document as their result, and
+  `api_reference`, `manifest_reference`, `guide`, `list_examples` and
+  `example_source` serve the reference, the guides and the examples built
+  into the tool, which are offered as resources as well.
 
 ### Kit
 
