@@ -10,9 +10,10 @@ copy was made. Inside a project, `sdk/AGENTS.md` is the manual of the SDK kit
 the project holds and `tessoa-plugin upgrade` keeps it current: read it, and
 where it differs from the text below, follow it.
 
-Without a project yet, start from the plugin template:
-create a repository from https://github.com/Tessoa/tessoa-plugin-template,
-clone it and follow the steps below inside it.
+Without a project yet: when `tessoa-plugin` is installed, create one with
+`tessoa-plugin new` (step 3 below, or the `new_project` tool of
+`tessoa-plugin mcp`). Otherwise start from the plugin template: create a
+repository from https://github.com/Tessoa/tessoa-plugin-template, clone it and follow the steps below inside it.
 
 The manual follows, unchanged.
 

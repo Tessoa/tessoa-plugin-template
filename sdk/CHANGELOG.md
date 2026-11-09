@@ -58,6 +58,11 @@ examples).
   `api_reference`, `manifest_reference`, `guide`, `list_examples` and
   `example_source` serve the reference, the guides and the examples built
   into the tool, which are offered as resources as well.
+- `install` and `dev` on Windows no longer keep a caller waiting that reads
+  their output through a pipe when they start tessoa: the tessoa they start
+  gets none of their handles and is not stopped by their Ctrl+C.
+- When `TESSOA_EXE` is set, `install` uses only that path and reports a
+  wrong one, instead of handing the plugin to another tessoa on the PATH.
 
 ### Kit
 
