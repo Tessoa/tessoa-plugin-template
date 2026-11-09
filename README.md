@@ -59,7 +59,10 @@ folder, without the examples and the setup scripts.
 | `LICENSE` | The MIT licence of everything outside `sdk/`. |
 
 A few one-line files at the root, under the names some tools look for, point
-those tools to `AGENTS.md`.
+those tools to `AGENTS.md`. One tool also gets a skill with the manual in it,
+in `skills/tessoa-plugin/` inside that tool's own folder at the root; delete
+the folder if you do not use the tool. `sdk/docs/guide/ai-tools.md` says
+which tool it is and how to install the skill outside the template.
 
 ## Examples as separate repositories
 

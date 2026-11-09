@@ -47,6 +47,8 @@ tessoa-plugin install
 | `LICENSE` | `sdk/` 以外所有文件的 MIT 许可。 |
 
 仓根还有几个一行的文件，用的是某些工具会找的文件名，内容都是让它们去读 `AGENTS.md`。
+其中一个工具另有一份技能包，内含说明书，放在仓根该工具自己的文件夹里的 `skills/tessoa-plugin/`；
+不用这个工具可以把那个文件夹删掉。是哪个工具、不用模板时怎么安装技能包，见 `sdk/docs/guide/ai-tools.md`。
 
 ## 独立的示例仓库
 
