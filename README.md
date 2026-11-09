@@ -42,6 +42,11 @@ no tessoa is needed until `install`, which hands the plugin to the tessoa
 running on this computer. tessoa asks you to confirm the plugin's permissions
 in its own window.
 
+With `tessoa-plugin` already installed, there is also a way that needs no
+copy of this template: `tessoa-plugin new my-plugin --lang ts --id
+com.example.my-plugin` writes the same project `init` would leave into a new
+folder, without the examples and the setup scripts.
+
 ## What is where
 
 | Path | What it is |

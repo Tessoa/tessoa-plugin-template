@@ -31,6 +31,10 @@ tessoa-plugin install
 运行插件，所以直到 `install` 之前都不需要 tessoa；`install` 把插件交给本机正在运行的 tessoa，
 插件要的权限由你在 tessoa 窗口里确认。
 
+已经装好 `tessoa-plugin` 的话，还有一条不用复制本模板的路：
+`tessoa-plugin new my-plugin --lang ts --id com.example.my-plugin` 在新文件夹里写出与 `init`
+之后相同的项目，只是不带例子和装环境脚本。
+
 ## 目录
 
 | 路径 | 是什么 |
