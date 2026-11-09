@@ -12,6 +12,7 @@ file = "dist/plugin.js"
 id = "json"
 title = "JSON viewer"
 icon = "note"
+follow = true
 
 [permissions]
 files = ["read-selected"]

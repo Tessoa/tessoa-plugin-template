@@ -12,6 +12,7 @@ file = "dist/plugin.js"
 id = "csv"
 title = "CSV table"
 icon = "menu"
+follow = true
 
 [permissions]
 files = ["read-selected"]

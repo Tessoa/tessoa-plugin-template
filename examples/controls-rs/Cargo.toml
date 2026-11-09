@@ -2,7 +2,7 @@
 name = "controls"
 description = "Example plugin: every control a page can show"
 edition = "2024"
-version = "0.1.0"
+version = "0.2.0"
 publish = false
 license = "MIT"
 
