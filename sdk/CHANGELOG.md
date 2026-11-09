@@ -10,7 +10,7 @@ can call or export), Tool (the `tessoa-plugin` command-line tool and the
 runner it tests with) and Kit (the manual, the guides, the reference and the
 examples).
 
-## Unreleased
+## 0.2.0 (2026-11-10)
 
 ### Interface
 
